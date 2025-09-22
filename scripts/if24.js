@@ -1,8 +1,6 @@
 // scripts/if24.js
 
-// IF24 탭 전용 함수들
-
-// IF24 콘텐츠 전송
+// IF24 콘텐츠 전송 (실제 webhook 전송)
 async function sendIF24Content(content, files, responseArea, sendBtn) {
     console.log('IF24 콘텐츠 전송 시작');
     
@@ -14,54 +12,72 @@ async function sendIF24Content(content, files, responseArea, sendBtn) {
             throw new Error('최소 하나의 플랫폼을 선택해주세요.');
         }
         
-        console.log('선택된 플랫폼:', selectedPlatforms);
-        
-        // 플랫폼별로 순차 전송
-        const results = {};
-        
-        for (const platform of selectedPlatforms) {
-            console.log(`${platform} 플랫폼 전송 시작`);
-            
-            const webhookUrl = getWebhookUrl(platform);
-            if (!webhookUrl) {
-                results[platform] = {
-                    success: false,
-                    error: 'Webhook URL이 설정되지 않았습니다.'
-                };
-                continue;
-            }
-            
-            try {
-                const result = await sendToPlatform(platform, content, files, webhookUrl);
-                results[platform] = result;
-                console.log(`${platform} 전송 결과:`, result);
-            } catch (error) {
-                console.error(`${platform} 전송 오류:`, error);
-                results[platform] = {
-                    success: false,
-                    error: error.message
-                };
-            }
+        // IF24 통합 웹훅 URL 확인
+        const webhookUrl = webhookSettings.if24;
+        if (!webhookUrl) {
+            throw new Error('IF24 Webhook URL이 설정되지 않았습니다.');
         }
         
-        // 전체 결과 처리
-        const overallSuccess = Object.values(results).some(result => result.success);
+        console.log('선택된 플랫폼:', selectedPlatforms);
+        console.log('IF24 Webhook URL:', webhookUrl);
         
-        const response = {
-            success: overallSuccess,
-            timestamp: new Date().toISOString(),
-            platforms: results,
-            content: content,
-            fileCount: files.length
-        };
+        // FormData 생성
+        const formData = new FormData();
+        formData.append('content', content);
+        formData.append('platforms', JSON.stringify(selectedPlatforms));
+        formData.append('timestamp', new Date().toISOString());
+        formData.append('source', 'AI_Content_Uploader');
+        formData.append('tab', 'if24');
         
-        handleResponse(response, responseArea, sendBtn, 'IF24 전송 완료');
+        // 파일 추가
+        files.forEach((file, index) => {
+            formData.append(`image_${index}`, file);
+        });
+        
+        console.log('FormData 생성 완료, 웹훅 전송 시도...');
+        
+        // 실제 웹훅 전송
+        const response = await fetch(webhookUrl, {
+            method: 'POST',
+            body: formData
+        });
+        
+        console.log('웹훅 응답 상태:', response.status, response.statusText);
+        
+        let result;
+        try {
+            result = await response.json();
+        } catch (e) {
+            // JSON 파싱 실패 시 텍스트로 처리
+            result = {
+                success: response.ok,
+                message: await response.text() || response.statusText,
+                status: response.status
+            };
+        }
+        
+        if (response.ok) {
+            const successResponse = {
+                success: true,
+                platform: 'if24',
+                platforms: selectedPlatforms,
+                result: result,
+                timestamp: new Date().toISOString(),
+                content: content,
+                fileCount: files.length
+            };
+            
+            handleResponse(successResponse, responseArea, sendBtn, 'IF24 전송 완료');
+        } else {
+            throw new Error(`웹훅 전송 실패: ${response.status} ${response.statusText}`);
+        }
         
     } catch (error) {
         console.error('IF24 전송 오류:', error);
         
         const errorResponse = {
             success: false,
+            platform: 'if24',
             error: error.message,
             timestamp: new Date().toISOString()
         };
@@ -74,62 +90,21 @@ async function sendIF24Content(content, files, responseArea, sendBtn) {
 function getSelectedPlatforms() {
     const platforms = [];
     
-    if (document.getElementById('instagram-check').checked) {
+    const instagramCheck = document.getElementById('instagram-check');
+    const threadsCheck = document.getElementById('threads-check');
+    const xCheck = document.getElementById('x-check');
+    
+    if (instagramCheck && instagramCheck.checked) {
         platforms.push('instagram');
     }
-    if (document.getElementById('thread-check').checked) {
-        platforms.push('thread');
+    if (threadsCheck && threadsCheck.checked) {
+        platforms.push('threads');
     }
-    if (document.getElementById('x-check').checked) {
+    if (xCheck && xCheck.checked) {
         platforms.push('x');
     }
     
     return platforms;
-}
-
-// 플랫폼별 Webhook URL 가져오기
-function getWebhookUrl(platform) {
-    switch(platform) {
-        case 'instagram':
-            return webhookSettings.instagram;
-        case 'thread':
-            return webhookSettings.thread;
-        case 'x':
-            return webhookSettings.x;
-        default:
-            return null;
-    }
-}
-
-// 플랫폼별 전송
-async function sendToPlatform(platform, content, files, webhookUrl) {
-    console.log(`${platform} 플랫폼으로 전송 시작`);
-    
-    // 플랫폼별 콘텐츠 최적화
-    const optimizedContent = optimizeContentForPlatform(content, platform);
-    
-    // FormData 생성
-    const formData = createFormData(optimizedContent, files, {
-        platform: platform,
-        timestamp: new Date().toISOString(),
-        source: 'AI_Content_Uploader'
-    });
-    
-    try {
-        // 실제 환경에서는 실제 Webhook URL로 전송
-        // 데모용으로 Mock 응답 생성
-        const mockResponse = await sendMockRequest(platform, formData, webhookUrl);
-        
-        return {
-            success: true,
-            platform: platform,
-            response: mockResponse,
-            timestamp: new Date().toISOString()
-        };
-        
-    } catch (error) {
-        throw new Error(`${platform} 전송 실패: ${error.message}`);
-    }
 }
 
 // 플랫폼별 콘텐츠 최적화
@@ -142,9 +117,9 @@ function optimizeContentForPlatform(content, platform) {
             optimized = addInstagramOptimization(content);
             break;
             
-        case 'thread':
+        case 'threads':
             // 스레드: 스레드 형식 최적화
-            optimized = addThreadOptimization(content);
+            optimized = addThreadsOptimization(content);
             break;
             
         case 'x':
@@ -175,7 +150,7 @@ function addInstagramOptimization(content) {
 }
 
 // 스레드 최적화
-function addThreadOptimization(content) {
+function addThreadsOptimization(content) {
     // 스레드 형식 최적화
     let optimized = content;
     
@@ -202,7 +177,7 @@ function addThreadOptimization(content) {
         const totalParts = parts.length;
         optimized = parts.map((part, index) => 
             part.replace('(1/n)', `(${index + 1}/${totalParts})`)
-        ).join('\n\n---THREAD_SPLIT---\n\n');
+        ).join('\n\n---THREADS_SPLIT---\n\n');
     }
     
     return optimized;
@@ -226,50 +201,12 @@ function addXOptimization(content) {
     return optimized;
 }
 
-// Mock 요청 전송 (데모용)
-async function sendMockRequest(platform, formData, webhookUrl) {
-    console.log(`Mock 요청 전송 - 플랫폼: ${platform}, URL: ${webhookUrl}`);
-    
-    // 실제 환경에서는 다음과 같이 실제 요청을 보냄:
-    /*
-    const response = await fetch(webhookUrl, {
-        method: 'POST',
-        body: formData
-    });
-    
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    return await response.json();
-    */
-    
-    // 데모용 Mock 응답
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            // 90% 확률로 성공
-            if (Math.random() > 0.1) {
-                resolve({
-                    success: true,
-                    platform: platform,
-                    postId: `${platform}_${Date.now()}`,
-                    url: `https://${platform}.com/post/${Date.now()}`,
-                    timestamp: new Date().toISOString(),
-                    message: `${platform}에 성공적으로 게시되었습니다.`
-                });
-            } else {
-                reject(new Error(`${platform} API 오류: 일시적인 서버 오류`));
-            }
-        }, 1000 + Math.random() * 2000); // 1-3초 랜덤 지연
-    });
-}
-
 // IF24 특화 이벤트 리스너들
 document.addEventListener('DOMContentLoaded', function() {
     console.log('IF24 모듈 초기화');
     
     // 플랫폼 선택 체크박스 이벤트
-    const checkboxes = ['instagram-check', 'thread-check', 'x-check'];
+    const checkboxes = ['instagram-check', 'threads-check', 'x-check'];
     
     checkboxes.forEach(checkboxId => {
         const checkbox = document.getElementById(checkboxId);
@@ -306,7 +243,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Ctrl+1,2,3으로 플랫폼 토글
         if (e.ctrlKey && ['1', '2', '3'].includes(e.key)) {
             e.preventDefault();
-            const checkboxes = ['instagram-check', 'thread-check', 'x-check'];
+            const checkboxes = ['instagram-check', 'threads-check', 'x-check'];
             const targetCheckbox = document.getElementById(checkboxes[parseInt(e.key) - 1]);
             if (targetCheckbox) {
                 targetCheckbox.checked = !targetCheckbox.checked;

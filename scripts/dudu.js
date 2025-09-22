@@ -1,7 +1,5 @@
 // scripts/dudu.js
 
-// Dudu 탭 전용 함수들
-
 // Dudu 콘텐츠 전송
 async function sendDuduContent(content, files, responseArea, sendBtn) {
     console.log('Dudu 콘텐츠 전송 시작');
@@ -20,28 +18,61 @@ async function sendDuduContent(content, files, responseArea, sendBtn) {
         const optimizedContent = optimizeDuduContent(content);
         
         // FormData 생성
-        const formData = createFormData(optimizedContent, files, {
-            platform: 'dudu',
-            timestamp: new Date().toISOString(),
-            source: 'AI_Content_Uploader',
-            contentType: 'social',
-            mood: analyzeDuduMood(content)
+        const formData = new FormData();
+        formData.append('content', optimizedContent);
+        formData.append('platform', 'dudu');
+        formData.append('timestamp', new Date().toISOString());
+        formData.append('source', 'AI_Content_Uploader');
+        formData.append('tab', 'dudu');
+        formData.append('contentType', 'social');
+        formData.append('mood', analyzeDuduMood(content));
+        
+        // 파일 추가
+        files.forEach((file, index) => {
+            formData.append(`image_${index}`, file);
         });
         
-        // 전송 시도
-        const result = await sendDuduRequest(formData, webhookUrl);
+        console.log('Dudu FormData 생성 완료, 웹훅 전송 시도...');
         
-        const response = {
-            success: true,
-            platform: 'dudu',
-            result: result,
-            timestamp: new Date().toISOString(),
-            content: optimizedContent,
-            fileCount: files.length,
-            contentAnalysis: analyzeDuduContent(content)
-        };
+        // 실제 웹훅 전송
+        const response = await fetch(webhookUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Platform': 'Dudu',
+                'X-Source': 'AI-Content-Uploader',
+                'X-Content-Type': 'social'
+            }
+        });
         
-        handleResponse(response, responseArea, sendBtn, 'Dudu 전송 완료');
+        console.log('Dudu 웹훅 응답 상태:', response.status, response.statusText);
+        
+        let result;
+        try {
+            result = await response.json();
+        } catch (e) {
+            result = {
+                success: response.ok,
+                message: await response.text() || response.statusText,
+                status: response.status
+            };
+        }
+        
+        if (response.ok) {
+            const successResponse = {
+                success: true,
+                platform: 'dudu',
+                result: result,
+                timestamp: new Date().toISOString(),
+                content: optimizedContent,
+                fileCount: files.length,
+                contentAnalysis: analyzeDuduContent(optimizedContent)
+            };
+            
+            handleResponse(successResponse, responseArea, sendBtn, 'Dudu 전송 완료');
+        } else {
+            throw new Error(`Dudu 웹훅 전송 실패: ${response.status} ${response.statusText}`);
+        }
         
     } catch (error) {
         console.error('Dudu 전송 오류:', error);
@@ -166,10 +197,13 @@ function analyzeDuduContent(content) {
 
 // Dudu 가독성 점수 계산
 function calculateDuduReadability(content) {
-    const avgWordsPerSentence = content.split(/[.!?]/).reduce((acc, sentence) => {
+    const sentences = content.split(/[.!?]/).filter(s => s.trim().length > 0);
+    if (sentences.length === 0) return 50;
+    
+    const avgWordsPerSentence = sentences.reduce((acc, sentence) => {
         const words = sentence.trim().split(/\s+/).length;
         return acc + words;
-    }, 0) / content.split(/[.!?]/).length;
+    }, 0) / sentences.length;
     
     // 15단어 이하면 좋은 가독성
     return Math.max(0, Math.min(100, 100 - (avgWordsPerSentence - 15) * 5));
@@ -193,54 +227,6 @@ function calculateDuduFriendliness(content) {
     });
     
     return Math.min(100, score);
-}
-
-// Dudu 요청 전송
-async function sendDuduRequest(formData, webhookUrl) {
-    console.log('Dudu 요청 전송 시작');
-    
-    // 실제 환경에서는 실제 API 호출
-    /*
-    const response = await fetch(webhookUrl, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Platform': 'Dudu',
-            'X-Source': 'AI-Content-Uploader',
-            'X-Content-Type': 'social'
-        }
-    });
-    
-    if (!response.ok) {
-        throw new Error(`Dudu API 오류: ${response.status} ${response.statusText}`);
-    }
-    
-    return await response.json();
-    */
-    
-    // 데모용 Mock 응답
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            // 95% 확률로 성공 (Dudu는 관대한 플랫폼으로 설정)
-            if (Math.random() > 0.05) {
-                resolve({
-                    success: true,
-                    platform: 'dudu',
-                    postId: `dudu_${Date.now()}`,
-                    url: `https://dudu.com/post/${Date.now()}`,
-                    timestamp: new Date().toISOString(),
-                    message: 'Dudu에 성공적으로 게시되었습니다! 😊',
-                    engagement: {
-                        expectedLikes: Math.floor(Math.random() * 50) + 10,
-                        expectedComments: Math.floor(Math.random() * 20) + 5,
-                        friendlinessScore: Math.floor(Math.random() * 30) + 70
-                    }
-                });
-            } else {
-                reject(new Error('Dudu API 오류: 네트워크 연결 문제'));
-            }
-        }, 800 + Math.random() * 1500); // 0.8-2.3초 지연 (빠른 플랫폼)
-    });
 }
 
 // Dudu 콘텐츠 제안
@@ -328,9 +314,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (content) {
                 const suggestions = suggestDuduImprovements(content);
                 if (suggestions.length > 0) {
-                    showNotification(suggestions.join(' '), 'info');
+                    if (typeof showNotification === 'function') {
+                        showNotification(suggestions.join(' '), 'info');
+                    }
                 } else {
-                    showNotification('완벽해요! 👍', 'success');
+                    if (typeof showNotification === 'function') {
+                        showNotification('완벽해요! 👍', 'success');
+                    }
                 }
             }
         }
@@ -365,7 +355,11 @@ Dudu 작성 팁! 😊
 • Ctrl+H: 도움말 (지금 이거!)
     `;
     
-    showNotification(helpMessage, 'info');
+    if (typeof showNotification === 'function') {
+        showNotification(helpMessage, 'info');
+    } else {
+        alert(helpMessage);
+    }
 }
 
 console.log('dudu.js 로드 완료');

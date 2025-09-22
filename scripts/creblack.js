@@ -1,7 +1,5 @@
 // scripts/creblack.js
 
-// CreBlack 탭 전용 함수들
-
 // CreBlack 콘텐츠 전송
 async function sendCreBlackContent(content, files, responseArea, sendBtn) {
     console.log('CreBlack 콘텐츠 전송 시작');
@@ -20,26 +18,59 @@ async function sendCreBlackContent(content, files, responseArea, sendBtn) {
         const optimizedContent = optimizeCreBlackContent(content);
         
         // FormData 생성
-        const formData = createFormData(optimizedContent, files, {
-            platform: 'creblack',
-            timestamp: new Date().toISOString(),
-            source: 'AI_Content_Uploader',
-            contentType: 'creative'
+        const formData = new FormData();
+        formData.append('content', optimizedContent);
+        formData.append('platform', 'creblack');
+        formData.append('timestamp', new Date().toISOString());
+        formData.append('source', 'AI_Content_Uploader');
+        formData.append('tab', 'creblack');
+        formData.append('contentType', 'creative');
+        
+        // 파일 추가
+        files.forEach((file, index) => {
+            formData.append(`image_${index}`, file);
         });
         
-        // 전송 시도
-        const result = await sendCreBlackRequest(formData, webhookUrl);
+        console.log('CreBlack FormData 생성 완료, 웹훅 전송 시도...');
         
-        const response = {
-            success: true,
-            platform: 'creblack',
-            result: result,
-            timestamp: new Date().toISOString(),
-            content: optimizedContent,
-            fileCount: files.length
-        };
+        // 실제 웹훅 전송
+        const response = await fetch(webhookUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Platform': 'CreBlack',
+                'X-Source': 'AI-Content-Uploader'
+            }
+        });
         
-        handleResponse(response, responseArea, sendBtn, 'CreBlack 전송 완료');
+        console.log('CreBlack 웹훅 응답 상태:', response.status, response.statusText);
+        
+        let result;
+        try {
+            result = await response.json();
+        } catch (e) {
+            result = {
+                success: response.ok,
+                message: await response.text() || response.statusText,
+                status: response.status
+            };
+        }
+        
+        if (response.ok) {
+            const successResponse = {
+                success: true,
+                platform: 'creblack',
+                result: result,
+                timestamp: new Date().toISOString(),
+                content: optimizedContent,
+                fileCount: files.length,
+                contentAnalysis: analyzeCreBlackContent(optimizedContent)
+            };
+            
+            handleResponse(successResponse, responseArea, sendBtn, 'CreBlack 전송 완료');
+        } else {
+            throw new Error(`CreBlack 웹훅 전송 실패: ${response.status} ${response.statusText}`);
+        }
         
     } catch (error) {
         console.error('CreBlack 전송 오류:', error);
@@ -112,52 +143,6 @@ function improveCreBlackFormatting(content) {
     }
     
     return formatted;
-}
-
-// CreBlack 요청 전송
-async function sendCreBlackRequest(formData, webhookUrl) {
-    console.log('CreBlack 요청 전송 시작');
-    
-    // 실제 환경에서는 실제 API 호출
-    /*
-    const response = await fetch(webhookUrl, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Platform': 'CreBlack',
-            'X-Source': 'AI-Content-Uploader'
-        }
-    });
-    
-    if (!response.ok) {
-        throw new Error(`CreBlack API 오류: ${response.status} ${response.statusText}`);
-    }
-    
-    return await response.json();
-    */
-    
-    // 데모용 Mock 응답
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            // 85% 확률로 성공 (CreBlack은 좀 더 까다로운 플랫폼으로 설정)
-            if (Math.random() > 0.15) {
-                resolve({
-                    success: true,
-                    platform: 'creblack',
-                    postId: `cb_${Date.now()}`,
-                    url: `https://creblack.com/post/${Date.now()}`,
-                    timestamp: new Date().toISOString(),
-                    message: 'CreBlack에 성공적으로 게시되었습니다.',
-                    analytics: {
-                        expectedReach: Math.floor(Math.random() * 1000) + 500,
-                        category: 'creative'
-                    }
-                });
-            } else {
-                reject(new Error('CreBlack API 오류: 콘텐츠 검토 실패'));
-            }
-        }, 1500 + Math.random() * 2000); // 1.5-3.5초 지연
-    });
 }
 
 // CreBlack 특화 기능들
@@ -242,7 +227,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (content) {
                 const preview = previewCreBlackContent(content);
                 console.log('CreBlack 미리보기 결과:', preview);
-                showNotification('콘솔에서 미리보기 결과를 확인하세요.', 'info');
+                if (typeof showNotification === 'function') {
+                    showNotification('콘솔에서 미리보기 결과를 확인하세요.', 'info');
+                }
             }
         }
     });
