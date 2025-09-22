@@ -36,7 +36,7 @@
                             <span>인스타그램</span>
                         </label>
                         <label class="checkbox-label">
-                            <input type="checkbox" id="thread-check" value="thread">
+                            <input type="checkbox" id="threads-check" value="threads">
                             <span>스레드</span>
                         </label>
                         <label class="checkbox-label">
@@ -141,33 +141,25 @@
                 <button class="close-btn" onclick="closeSettings()">✕</button>
             </div>
             <div class="modal-body">
+                <!-- IF24 웹훅 URL을 1개로 통합 -->
                 <div class="webhook-group">
                     <h3>IF24 Webhook URL:</h3>
                     <div class="webhook-item">
-                        <label>Instagram</label>
-                        <input type="url" id="instagram-webhook" placeholder="https://...">
-                    </div>
-                    <div class="webhook-item">
-                        <label>Thread</label>
-                        <input type="url" id="thread-webhook" placeholder="https://...">
-                    </div>
-                    <div class="webhook-item">
-                        <label>X</label>
-                        <input type="url" id="x-webhook" placeholder="https://...">
+                        <input type="url" id="if24-webhook" placeholder="https://hook.eu2.make.com/...">
                     </div>
                 </div>
 
                 <div class="webhook-group">
                     <h3>CreBlack Webhook URL:</h3>
                     <div class="webhook-item">
-                        <input type="url" id="creblack-webhook" placeholder="https://...">
+                        <input type="url" id="creblack-webhook" placeholder="https://hook.eu2.make.com/...">
                     </div>
                 </div>
 
                 <div class="webhook-group">
                     <h3>Dudu Webhook URL:</h3>
                     <div class="webhook-item">
-                        <input type="url" id="dudu-webhook" placeholder="https://...">
+                        <input type="url" id="dudu-webhook" placeholder="https://hook.eu2.make.com/...">
                     </div>
                 </div>
             </div>
