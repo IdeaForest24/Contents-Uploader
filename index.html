@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 콘텐츠 업로더</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/if24.css">
+    <link rel="stylesheet" href="styles/creblack.css">
+    <link rel="stylesheet" href="styles/dudu.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <header class="header">
+            <h1>AI 콘텐츠 업로더</h1>
+            <button class="settings-btn" onclick="openSettings()">⚙️ 설정</button>
+        </header>
+
+        <!-- 탭 네비게이션 -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('if24')">IF24</button>
+            <button class="tab-btn" onclick="switchTab('creblack')">CreBlack</button>
+            <button class="tab-btn" onclick="switchTab('dudu')">Dudu</button>
+        </nav>
+
+        <!-- 탭 컨텐츠 -->
+        <main class="main-content">
+            <!-- IF24 탭 -->
+            <div id="if24-tab" class="tab-content active">
+                <div class="platform-selection">
+                    <h3>플랫폼 선택:</h3>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="instagram-check" value="instagram">
+                            <span>인스타그램</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="thread-check" value="thread">
+                            <span>스레드</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="x-check" value="x">
+                            <span>X</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="upload-section">
+                    <h3>이미지 업로드:</h3>
+                    <div class="upload-area" id="if24-upload">
+                        <div class="upload-placeholder">
+                            <span>📎 이미지 업로드</span>
+                            <p>또는 드래그 앤 드롭</p>
+                        </div>
+                        <input type="file" id="if24-file-input" multiple accept="image/*" style="display: none;">
+                        <div class="file-list" id="if24-file-list"></div>
+                    </div>
+                </div>
+
+                <div class="content-section">
+                    <h3>본문 입력:</h3>
+                    <textarea id="if24-content" placeholder="본문 내용을 입력하세요..." rows="6"></textarea>
+                </div>
+
+                <div class="action-section">
+                    <button class="send-btn" onclick="sendContent('if24')">전송</button>
+                </div>
+
+                <div class="response-section">
+                    <h3>Webhook Response:</h3>
+                    <div class="response-area" id="if24-response">응답 결과가 여기에 표시됩니다...</div>
+                </div>
+            </div>
+
+            <!-- CreBlack 탭 -->
+            <div id="creblack-tab" class="tab-content">
+                <div class="upload-section">
+                    <h3>이미지 업로드:</h3>
+                    <div class="upload-area" id="creblack-upload">
+                        <div class="upload-placeholder">
+                            <span>📎 이미지 업로드</span>
+                            <p>또는 드래그 앤 드롭</p>
+                        </div>
+                        <input type="file" id="creblack-file-input" multiple accept="image/*" style="display: none;">
+                        <div class="file-list" id="creblack-file-list"></div>
+                    </div>
+                </div>
+
+                <div class="content-section">
+                    <h3>본문 입력:</h3>
+                    <textarea id="creblack-content" placeholder="본문 내용을 입력하세요..." rows="6"></textarea>
+                </div>
+
+                <div class="action-section">
+                    <button class="send-btn" onclick="sendContent('creblack')">전송</button>
+                </div>
+
+                <div class="response-section">
+                    <h3>Webhook Response:</h3>
+                    <div class="response-area" id="creblack-response">응답 결과가 여기에 표시됩니다...</div>
+                </div>
+            </div>
+
+            <!-- Dudu 탭 -->
+            <div id="dudu-tab" class="tab-content">
+                <div class="upload-section">
+                    <h3>이미지 업로드:</h3>
+                    <div class="upload-area" id="dudu-upload">
+                        <div class="upload-placeholder">
+                            <span>📎 이미지 업로드</span>
+                            <p>또는 드래그 앤 드롭</p>
+                        </div>
+                        <input type="file" id="dudu-file-input" multiple accept="image/*" style="display: none;">
+                        <div class="file-list" id="dudu-file-list"></div>
+                    </div>
+                </div>
+
+                <div class="content-section">
+                    <h3>본문 입력:</h3>
+                    <textarea id="dudu-content" placeholder="본문 내용을 입력하세요..." rows="6"></textarea>
+                </div>
+
+                <div class="action-section">
+                    <button class="send-btn" onclick="sendContent('dudu')">전송</button>
+                </div>
+
+                <div class="response-section">
+                    <h3>Webhook Response:</h3>
+                    <div class="response-area" id="dudu-response">응답 결과가 여기에 표시됩니다...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 설정 모달 -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Webhook 설정</h2>
+                <button class="close-btn" onclick="closeSettings()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="webhook-group">
+                    <h3>IF24 Webhook URL:</h3>
+                    <div class="webhook-item">
+                        <label>Instagram</label>
+                        <input type="url" id="instagram-webhook" placeholder="https://...">
+                    </div>
+                    <div class="webhook-item">
+                        <label>Thread</label>
+                        <input type="url" id="thread-webhook" placeholder="https://...">
+                    </div>
+                    <div class="webhook-item">
+                        <label>X</label>
+                        <input type="url" id="x-webhook" placeholder="https://...">
+                    </div>
+                </div>
+
+                <div class="webhook-group">
+                    <h3>CreBlack Webhook URL:</h3>
+                    <div class="webhook-item">
+                        <input type="url" id="creblack-webhook" placeholder="https://...">
+                    </div>
+                </div>
+
+                <div class="webhook-group">
+                    <h3>Dudu Webhook URL:</h3>
+                    <div class="webhook-item">
+                        <input type="url" id="dudu-webhook" placeholder="https://...">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn" onclick="closeSettings()">취소</button>
+                <button class="save-btn" onclick="saveSettings()">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="scripts/main.js"></script>
+    <script src="scripts/if24.js"></script>
+    <script src="scripts/creblack.js"></script>
+    <script src="scripts/dudu.js"></script>
+</body>
+</html>
