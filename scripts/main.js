@@ -3,9 +3,9 @@
 // 전역 변수
 let currentTab = 'if24';
 let uploadedFiles = {
-    if24: [],
-    creblack: [],
-    dudu: []
+    if24: null,      // 단일 파일로 변경
+    creblack: null,  // 단일 파일로 변경
+    dudu: null       // 단일 파일로 변경
 };
 
 // 웹훅 설정 (수정된 구조)
@@ -76,14 +76,16 @@ function openSettings() {
     if (modal) {
         modal.classList.add('show');
         
-        // 현재 설정값 로드
+        // 현재 설정값 로드 (localStorage에서 불러온 값 포함)
         const if24Input = document.getElementById('if24-webhook');
         const creblackInput = document.getElementById('creblack-webhook');
         const duduInput = document.getElementById('dudu-webhook');
         
-        if (if24Input) if24Input.value = webhookSettings.if24;
-        if (creblackInput) creblackInput.value = webhookSettings.creblack;
-        if (duduInput) duduInput.value = webhookSettings.dudu;
+        if (if24Input) if24Input.value = webhookSettings.if24 || '';
+        if (creblackInput) creblackInput.value = webhookSettings.creblack || '';
+        if (duduInput) duduInput.value = webhookSettings.dudu || '';
+        
+        console.log('설정 모달에 현재 값 로드:', webhookSettings);
     }
 }
 
@@ -108,6 +110,14 @@ function saveSettings() {
     if (creblackInput) webhookSettings.creblack = creblackInput.value;
     if (duduInput) webhookSettings.dudu = duduInput.value;
     
+    // localStorage에 설정 저장
+    try {
+        localStorage.setItem('webhookSettings', JSON.stringify(webhookSettings));
+        console.log('localStorage에 설정 저장 완료:', webhookSettings);
+    } catch (error) {
+        console.error('localStorage 저장 실패:', error);
+    }
+    
     console.log('설정 저장 완료:', webhookSettings);
     showNotification('설정이 저장되었습니다.', 'success');
     closeSettings();
@@ -115,7 +125,23 @@ function saveSettings() {
 
 // 설정 로드
 function loadSettings() {
-    console.log('기본 설정 로드 완료');
+    console.log('설정 로드 시작');
+    
+    // localStorage에서 설정 불러오기
+    try {
+        const savedSettings = localStorage.getItem('webhookSettings');
+        if (savedSettings) {
+            const parsedSettings = JSON.parse(savedSettings);
+            webhookSettings = { ...webhookSettings, ...parsedSettings };
+            console.log('localStorage에서 설정 로드 완료:', webhookSettings);
+        } else {
+            console.log('저장된 설정이 없습니다.');
+        }
+    } catch (error) {
+        console.error('localStorage 로드 실패:', error);
+    }
+    
+    console.log('설정 로드 완료');
 }
 
 // 파일 업로드 설정
@@ -133,7 +159,11 @@ function setupFileUploads() {
         }
         
         // 클릭 이벤트
-        uploadArea.addEventListener('click', () => {
+        uploadArea.addEventListener('click', (e) => {
+            // 삭제 버튼 클릭 시에는 파일 선택기 열지 않음
+            if (e.target.classList.contains('file-remove')) {
+                return;
+            }
             fileInput.click();
         });
         
@@ -162,63 +192,81 @@ function setupFileUploads() {
     console.log('파일 업로드 설정 완료');
 }
 
-// 파일 선택 처리
+// 파일 선택 처리 (단일 파일로 수정)
 function handleFileSelect(files, tabName) {
     console.log(`파일 선택 - 탭: ${tabName}, 파일 수: ${files.length}`);
     
+    if (files.length === 0) return;
+    
+    const file = files[0]; // 첫 번째 파일만 선택
     const fileList = document.getElementById(`${tabName}-file-list`);
     if (!fileList) return;
     
-    Array.from(files).forEach(file => {
-        // 이미지 파일만 허용
-        if (!file.type.startsWith('image/')) {
-            showNotification('이미지 파일만 업로드 가능합니다.', 'error');
-            return;
-        }
-        
-        // 파일 크기 체크 (10MB 제한)
-        if (file.size > 10 * 1024 * 1024) {
-            showNotification('파일 크기는 10MB 이하여야 합니다.', 'error');
-            return;
-        }
-        
-        uploadedFiles[tabName].push(file);
-        
-        // 파일 아이템 생성
-        const fileItem = document.createElement('div');
-        fileItem.className = 'file-item';
-        fileItem.innerHTML = `
-            <span class="file-name">${file.name} (${formatFileSize(file.size)})</span>
-            <button class="file-remove" onclick="removeFile('${tabName}', ${uploadedFiles[tabName].length - 1})">삭제</button>
-        `;
-        
-        fileList.appendChild(fileItem);
-    });
+    // 이미지 파일만 허용
+    if (!file.type.startsWith('image/')) {
+        showNotification('이미지 파일만 업로드 가능합니다.', 'error');
+        return;
+    }
     
-    console.log(`업로드된 파일 목록 (${tabName}):`, uploadedFiles[tabName].map(f => f.name));
-}
-
-// 파일 제거
-function removeFile(tabName, index) {
-    console.log(`파일 제거 - 탭: ${tabName}, 인덱스: ${index}`);
+    // 파일 크기 체크 (10MB 제한)
+    if (file.size > 10 * 1024 * 1024) {
+        showNotification('파일 크기는 10MB 이하여야 합니다.', 'error');
+        return;
+    }
     
-    uploadedFiles[tabName].splice(index, 1);
+    // 기존 파일 제거
+    uploadedFiles[tabName] = file;
     
-    // 파일 목록 다시 렌더링
-    const fileList = document.getElementById(`${tabName}-file-list`);
-    if (!fileList) return;
-    
+    // 파일 목록 초기화
     fileList.innerHTML = '';
     
-    uploadedFiles[tabName].forEach((file, i) => {
+    // 이미지 미리보기와 파일 정보 생성
+    const fileReader = new FileReader();
+    fileReader.onload = function(e) {
         const fileItem = document.createElement('div');
         fileItem.className = 'file-item';
         fileItem.innerHTML = `
-            <span class="file-name">${file.name} (${formatFileSize(file.size)})</span>
-            <button class="file-remove" onclick="removeFile('${tabName}', ${i})">삭제</button>
+            <button class="file-remove" onclick="removeFile('${tabName}', event)">✕ 삭제</button>
+            <div class="file-preview">
+                <img src="${e.target.result}" alt="업로드된 이미지" class="preview-image">
+                <div class="file-info">
+                    <span class="file-name">${file.name}</span>
+                    <span class="file-size">${formatFileSize(file.size)}</span>
+                </div>
+            </div>
         `;
+        
         fileList.appendChild(fileItem);
-    });
+    };
+    
+    fileReader.readAsDataURL(file);
+    
+    console.log(`업로드된 파일 (${tabName}):`, file.name);
+}
+
+// 파일 제거 (이벤트 버블링 방지 추가)
+function removeFile(tabName, event) {
+    // 이벤트 버블링 방지
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    
+    console.log(`파일 제거 - 탭: ${tabName}`);
+    
+    uploadedFiles[tabName] = null;
+    
+    // 파일 목록 초기화
+    const fileList = document.getElementById(`${tabName}-file-list`);
+    if (fileList) {
+        fileList.innerHTML = '';
+    }
+    
+    // 파일 입력 초기화
+    const fileInput = document.getElementById(`${tabName}-file-input`);
+    if (fileInput) {
+        fileInput.value = '';
+    }
 }
 
 // 파일 크기 포맷팅
@@ -286,12 +334,12 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-// 공통 전송 함수
+// 공통 전송 함수 (단일 파일로 수정 + 1분 타임아웃 추가)
 function sendContent(tabName) {
     console.log(`콘텐츠 전송 시작 - 탭: ${tabName}`);
     
     const content = document.getElementById(`${tabName}-content`).value;
-    const files = uploadedFiles[tabName];
+    const file = uploadedFiles[tabName]; // 단일 파일
     const responseArea = document.getElementById(`${tabName}-response`);
     const sendBtn = document.querySelector(`#${tabName}-tab .send-btn`);
     
@@ -302,7 +350,7 @@ function sendContent(tabName) {
     }
     
     // 입력 검증
-    if (!content.trim() && files.length === 0) {
+    if (!content.trim() && !file) {
         showNotification('본문 내용 또는 이미지를 입력해주세요.', 'warning');
         return;
     }
@@ -312,16 +360,55 @@ function sendContent(tabName) {
     sendBtn.disabled = true;
     sendBtn.textContent = '전송 중...';
     
-    // 응답 영역 초기화
-    responseArea.textContent = '전송 중...';
-    responseArea.className = 'response-area';
+    // 응답 영역 로그 시작 메시지 추가
+    const timestamp = new Date().toLocaleString('ko-KR');
+    const startLogEntry = document.createElement('div');
+    startLogEntry.className = 'log-entry';
+    startLogEntry.innerHTML = `
+        <div class="log-header">
+            <span class="log-time">[${timestamp}]</span>
+            <span class="log-status pending">⏳ 전송 시작...</span>
+        </div>
+    `;
+    
+    // 응답 영역 초기화 및 로그 형식으로 변경
+    if (!responseArea.classList.contains('response-log')) {
+        responseArea.innerHTML = '';
+        responseArea.classList.remove('response-area');
+        responseArea.classList.add('response-log');
+    }
+    
+    responseArea.appendChild(startLogEntry);
+    responseArea.scrollTop = responseArea.scrollHeight;
+    
+    // 파일 배열로 변환 (기존 함수들과의 호환성을 위해)
+    const filesArray = file ? [file] : [];
+    
+    // 1분 타임아웃 설정
+    const timeoutId = setTimeout(() => {
+        resetSendButton(sendBtn);
+        const timeoutResponse = {
+            success: false,
+            error: '전송 시간이 초과되었습니다. (최대 1분)',
+            timestamp: new Date().toISOString(),
+            timeout: true
+        };
+        handleResponse(timeoutResponse, responseArea, sendBtn);
+    }, 60000); // 60초
+    
+    // 성공/실패 응답 처리 함수 래핑
+    const handleResponseWithTimeout = (response, successMessage) => {
+        clearTimeout(timeoutId); // 타임아웃 제거
+        handleResponse(response, responseArea, sendBtn, successMessage);
+    };
     
     // 탭별 전송 로직 호출
     switch(tabName) {
         case 'if24':
             if (typeof sendIF24Content === 'function') {
-                sendIF24Content(content, files, responseArea, sendBtn);
+                sendIF24Content(content, filesArray, responseArea, sendBtn, handleResponseWithTimeout);
             } else {
+                clearTimeout(timeoutId);
                 console.error('sendIF24Content 함수를 찾을 수 없습니다.');
                 resetSendButton(sendBtn);
                 showNotification('IF24 모듈 로딩 오류', 'error');
@@ -329,8 +416,9 @@ function sendContent(tabName) {
             break;
         case 'creblack':
             if (typeof sendCreBlackContent === 'function') {
-                sendCreBlackContent(content, files, responseArea, sendBtn);
+                sendCreBlackContent(content, filesArray, responseArea, sendBtn, handleResponseWithTimeout);
             } else {
+                clearTimeout(timeoutId);
                 console.error('sendCreBlackContent 함수를 찾을 수 없습니다.');
                 resetSendButton(sendBtn);
                 showNotification('CreBlack 모듈 로딩 오류', 'error');
@@ -338,14 +426,16 @@ function sendContent(tabName) {
             break;
         case 'dudu':
             if (typeof sendDuduContent === 'function') {
-                sendDuduContent(content, files, responseArea, sendBtn);
+                sendDuduContent(content, filesArray, responseArea, sendBtn, handleResponseWithTimeout);
             } else {
+                clearTimeout(timeoutId);
                 console.error('sendDuduContent 함수를 찾을 수 없습니다.');
                 resetSendButton(sendBtn);
                 showNotification('Dudu 모듈 로딩 오류', 'error');
             }
             break;
         default:
+            clearTimeout(timeoutId);
             console.error('알 수 없는 탭:', tabName);
             resetSendButton(sendBtn);
             showNotification('오류가 발생했습니다.', 'error');
@@ -377,19 +467,52 @@ function createFormData(content, files, additionalData = {}) {
     return formData;
 }
 
-// 유틸리티 함수: 응답 처리
+// 유틸리티 함수: 응답 처리 (스크롤 방식으로 변경)
 function handleResponse(response, responseArea, sendBtn, successMessage = '전송 완료') {
     resetSendButton(sendBtn);
     
+    // 현재 시간 추가
+    const timestamp = new Date().toLocaleString('ko-KR');
+    const logEntry = document.createElement('div');
+    logEntry.className = 'log-entry';
+    
     if (response.success) {
-        responseArea.textContent = JSON.stringify(response, null, 2);
-        responseArea.classList.add('success');
+        logEntry.classList.add('success');
+        logEntry.innerHTML = `
+            <div class="log-header">
+                <span class="log-time">[${timestamp}]</span>
+                <span class="log-status success">✅ ${successMessage}</span>
+            </div>
+            <div class="log-content">
+                <pre>${JSON.stringify(response, null, 2)}</pre>
+            </div>
+        `;
         showNotification(successMessage, 'success');
     } else {
-        responseArea.textContent = `오류: ${response.error || '알 수 없는 오류'}`;
-        responseArea.classList.add('error');
+        logEntry.classList.add('error');
+        logEntry.innerHTML = `
+            <div class="log-header">
+                <span class="log-time">[${timestamp}]</span>
+                <span class="log-status error">❌ 전송 실패</span>
+            </div>
+            <div class="log-content">
+                <pre>오류: ${response.error || '알 수 없는 오류'}</pre>
+            </div>
+        `;
         showNotification('전송 실패', 'error');
     }
+    
+    // 기존 "전송 중..." 텍스트 제거하고 로그 추가
+    if (responseArea.textContent === '전송 중...') {
+        responseArea.innerHTML = '';
+        responseArea.classList.remove('response-area');
+        responseArea.classList.add('response-log');
+    }
+    
+    responseArea.appendChild(logEntry);
+    
+    // 스크롤을 맨 아래로
+    responseArea.scrollTop = responseArea.scrollHeight;
 }
 
 // CSS 애니메이션 추가
@@ -416,7 +539,75 @@ style.textContent = `
             opacity: 0;
         }
     }
+    
+    /* 이미지 미리보기 스타일 */
+    .file-preview {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+    }
+    
+    .preview-image {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .file-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .file-info .file-name {
+        font-weight: 500;
+    }
+    
+    .file-info .file-size {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    
+    .file-item {
+        align-items: center;
+        padding: 12px;
+    }
 `;
 document.head.appendChild(style);
+
+// 설정 초기화 (추가 기능)
+function resetSettings() {
+    console.log('설정 초기화');
+    
+    if (confirm('모든 Webhook URL 설정을 초기화하시겠습니까?')) {
+        webhookSettings = {
+            if24: '',
+            creblack: '',
+            dudu: ''
+        };
+        
+        // localStorage에서도 제거
+        try {
+            localStorage.removeItem('webhookSettings');
+            console.log('localStorage에서 설정 제거 완료');
+        } catch (error) {
+            console.error('localStorage 제거 실패:', error);
+        }
+        
+        // 모달의 입력 필드도 초기화
+        const if24Input = document.getElementById('if24-webhook');
+        const creblackInput = document.getElementById('creblack-webhook');
+        const duduInput = document.getElementById('dudu-webhook');
+        
+        if (if24Input) if24Input.value = '';
+        if (creblackInput) creblackInput.value = '';
+        if (duduInput) duduInput.value = '';
+        
+        showNotification('설정이 초기화되었습니다.', 'success');
+    }
+}
 
 console.log('main.js 로드 완료');

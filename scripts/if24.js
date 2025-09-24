@@ -1,7 +1,7 @@
 // scripts/if24.js
 
 // IF24 콘텐츠 전송 (실제 webhook 전송)
-async function sendIF24Content(content, files, responseArea, sendBtn) {
+async function sendIF24Content(content, files, responseArea, sendBtn, responseCallback) {
     console.log('IF24 콘텐츠 전송 시작');
     
     try {
@@ -29,10 +29,10 @@ async function sendIF24Content(content, files, responseArea, sendBtn) {
         formData.append('source', 'AI_Content_Uploader');
         formData.append('tab', 'if24');
         
-        // 파일 추가
-        files.forEach((file, index) => {
-            formData.append(`image_${index}`, file);
-        });
+        // 파일 추가 (단일 파일)
+        if (files && files.length > 0) {
+            formData.append('image_0', files[0]);
+        }
         
         console.log('FormData 생성 완료, 웹훅 전송 시도...');
         
@@ -46,12 +46,35 @@ async function sendIF24Content(content, files, responseArea, sendBtn) {
         
         let result;
         try {
-            result = await response.json();
-        } catch (e) {
-            // JSON 파싱 실패 시 텍스트로 처리
+            // 먼저 텍스트로 응답을 읽음
+            const responseText = await response.text();
+            console.log('응답 텍스트:', responseText);
+            
+            // JSON 파싱 시도
+            if (responseText.trim()) {
+                try {
+                    result = JSON.parse(responseText);
+                } catch (jsonError) {
+                    console.log('JSON 파싱 실패, 텍스트 응답 사용:', jsonError);
+                    result = {
+                        success: response.ok,
+                        message: responseText || response.statusText,
+                        status: response.status,
+                        rawResponse: responseText
+                    };
+                }
+            } else {
+                result = {
+                    success: response.ok,
+                    message: response.statusText || '빈 응답',
+                    status: response.status
+                };
+            }
+        } catch (error) {
+            console.error('응답 읽기 실패:', error);
             result = {
                 success: response.ok,
-                message: await response.text() || response.statusText,
+                message: `응답 읽기 실패: ${error.message}`,
                 status: response.status
             };
         }
@@ -64,10 +87,10 @@ async function sendIF24Content(content, files, responseArea, sendBtn) {
                 result: result,
                 timestamp: new Date().toISOString(),
                 content: content,
-                fileCount: files.length
+                fileCount: files ? files.length : 0
             };
             
-            handleResponse(successResponse, responseArea, sendBtn, 'IF24 전송 완료');
+            responseCallback(successResponse, 'IF24 전송 완료');
         } else {
             throw new Error(`웹훅 전송 실패: ${response.status} ${response.statusText}`);
         }
@@ -82,7 +105,7 @@ async function sendIF24Content(content, files, responseArea, sendBtn) {
             timestamp: new Date().toISOString()
         };
         
-        handleResponse(errorResponse, responseArea, sendBtn);
+        responseCallback(errorResponse);
     }
 }
 

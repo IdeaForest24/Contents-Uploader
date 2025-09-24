@@ -1,7 +1,7 @@
 // scripts/creblack.js
 
 // CreBlack 콘텐츠 전송
-async function sendCreBlackContent(content, files, responseArea, sendBtn) {
+async function sendCreBlackContent(content, files, responseArea, sendBtn, responseCallback) {
     console.log('CreBlack 콘텐츠 전송 시작');
     
     try {
@@ -26,10 +26,10 @@ async function sendCreBlackContent(content, files, responseArea, sendBtn) {
         formData.append('tab', 'creblack');
         formData.append('contentType', 'creative');
         
-        // 파일 추가
-        files.forEach((file, index) => {
-            formData.append(`image_${index}`, file);
-        });
+        // 파일 추가 (단일 파일)
+        if (files && files.length > 0) {
+            formData.append('image_0', files[0]);
+        }
         
         console.log('CreBlack FormData 생성 완료, 웹훅 전송 시도...');
         
@@ -47,11 +47,35 @@ async function sendCreBlackContent(content, files, responseArea, sendBtn) {
         
         let result;
         try {
-            result = await response.json();
-        } catch (e) {
+            // 먼저 텍스트로 응답을 읽음
+            const responseText = await response.text();
+            console.log('CreBlack 응답 텍스트:', responseText);
+            
+            // JSON 파싱 시도
+            if (responseText.trim()) {
+                try {
+                    result = JSON.parse(responseText);
+                } catch (jsonError) {
+                    console.log('JSON 파싱 실패, 텍스트 응답 사용:', jsonError);
+                    result = {
+                        success: response.ok,
+                        message: responseText || response.statusText,
+                        status: response.status,
+                        rawResponse: responseText
+                    };
+                }
+            } else {
+                result = {
+                    success: response.ok,
+                    message: response.statusText || '빈 응답',
+                    status: response.status
+                };
+            }
+        } catch (error) {
+            console.error('응답 읽기 실패:', error);
             result = {
                 success: response.ok,
-                message: await response.text() || response.statusText,
+                message: `응답 읽기 실패: ${error.message}`,
                 status: response.status
             };
         }
@@ -63,11 +87,11 @@ async function sendCreBlackContent(content, files, responseArea, sendBtn) {
                 result: result,
                 timestamp: new Date().toISOString(),
                 content: optimizedContent,
-                fileCount: files.length,
+                fileCount: files ? files.length : 0,
                 contentAnalysis: analyzeCreBlackContent(optimizedContent)
             };
             
-            handleResponse(successResponse, responseArea, sendBtn, 'CreBlack 전송 완료');
+            responseCallback(successResponse, 'CreBlack 전송 완료');
         } else {
             throw new Error(`CreBlack 웹훅 전송 실패: ${response.status} ${response.statusText}`);
         }
@@ -82,7 +106,7 @@ async function sendCreBlackContent(content, files, responseArea, sendBtn) {
             timestamp: new Date().toISOString()
         };
         
-        handleResponse(errorResponse, responseArea, sendBtn);
+        responseCallback(errorResponse);
     }
 }
 
