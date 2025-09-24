@@ -1,4 +1,20 @@
-/* styles/main.css */
+/* 응답 영역 기본 스타일 */
+.response-area {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 15px;
+    min-height: 120px;
+    color: #6c757d;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}/* styles/main.css */
 * {
     margin: 0;
     padding: 0;
@@ -151,6 +167,7 @@ body {
     background: #f8f9fa;
     transition: all 0.3s ease;
     cursor: pointer;
+    position: relative;
 }
 
 .upload-area:hover,
@@ -171,7 +188,7 @@ body {
     font-size: 0.9rem;
 }
 
-/* 파일 리스트 */
+/* 파일 리스트 및 미리보기 */
 .file-list {
     margin-top: 15px;
     text-align: left;
@@ -181,11 +198,56 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 12px;
+    padding: 12px;
     background: white;
     border: 1px solid #dee2e6;
-    border-radius: 4px;
-    margin-bottom: 5px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.file-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    transform: translateY(-1px);
+}
+
+/* 이미지 미리보기 스타일 */
+.file-preview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0; /* 텍스트 오버플로우 방지 */
+}
+
+.preview-image {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+}
+
+.preview-image:hover {
+    transform: scale(1.05);
+}
+
+.file-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+
+
+.file-info .file-size {
+    font-size: 0.8rem;
+    color: #6c757d;
 }
 
 .file-name {
@@ -197,14 +259,18 @@ body {
     background: #dc3545;
     color: white;
     border: none;
-    padding: 4px 8px;
-    border-radius: 3px;
+    padding: 6px 12px;
+    border-radius: 4px;
     cursor: pointer;
     font-size: 0.8rem;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
 }
 
 .file-remove:hover {
     background: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 /* 텍스트 영역 */
@@ -241,6 +307,8 @@ textarea:focus {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
 
 .send-btn:hover {
@@ -255,18 +323,187 @@ textarea:focus {
     box-shadow: none;
 }
 
-/* 응답 영역 */
-.response-area {
-    background: #f8f9fa;
+/* 응답 로그 스타일 */
+.response-log {
+    background: #ffffff;
     border: 1px solid #dee2e6;
     border-radius: 6px;
     padding: 15px;
-    min-height: 100px;
+    min-height: 120px;
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: inherit;
+    font-size: 0.9rem;
+}
+
+/* 스크롤바 스타일링 */
+.response-log::-webkit-scrollbar {
+    width: 8px;
+}
+
+.response-log::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.response-log::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.response-log::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+.log-entry {
+    border-bottom: 1px solid #e9ecef;
+    padding: 10px 0;
+    margin-bottom: 8px;
+    animation: slideInDown 0.3s ease-out;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.log-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.log-time {
+    font-size: 0.8rem;
     color: #6c757d;
     font-family: 'Courier New', monospace;
+}
+
+.log-status {
+    font-weight: 500;
     font-size: 0.9rem;
+}
+
+.log-status.success {
+    color: #38a169;
+}
+
+.log-status.error {
+    color: #e53e3e;
+}
+
+.log-status.pending {
+    color: #3182ce;
+}
+
+.log-content {
+    background: #f8f9fa;
+    border-radius: 4px;
+    padding: 8px;
+    margin-left: 20px;
+}
+
+.log-content pre {
+    margin: 0;
     white-space: pre-wrap;
     word-break: break-all;
+    font-size: 0.85rem;
+    color: #495057;
+}
+
+/* 이미지 미리보기 - 첨부파일 UI 스타일로 변경 */
+.file-preview {
+    display: block;
+    width: 100%;
+}
+
+.preview-image {
+    width: 100%;
+    max-width: 300px;
+    height: auto;
+    max-height: 200px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 2px solid #dee2e6;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    display: block;
+    margin: 0 auto;
+    background: #f8f9fa;
+}
+
+.preview-image:hover {
+    transform: scale(1.02);
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.file-info {
+    text-align: center;
+    margin-top: 10px;
+}
+
+.file-info .file-name {
+    font-weight: 500;
+    color: #495057;
+    font-size: 0.9rem;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.file-info .file-size {
+    font-size: 0.8rem;
+    color: #6c757d;
+    display: block;
+}
+
+.file-item {
+    display: block;
+    padding: 15px;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.file-item:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.file-remove {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.file-remove:hover {
+    background: #c82333;
+    transform: scale(1.05);
 }
 
 /* 모달 */
@@ -340,10 +577,30 @@ textarea:focus {
     padding: 20px 25px;
     border-top: 1px solid #dee2e6;
     display: flex;
-    justify-content: flex-end;
-    gap: 10px;
+    justify-content: space-between;
+    align-items: center;
     background: #f8f9fa;
     border-radius: 0 0 8px 8px;
+}
+
+.footer-right {
+    display: flex;
+    gap: 10px;
+}
+
+/* 버튼 스타일 */
+.reset-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.reset-btn:hover {
+    background: #c82333;
 }
 
 /* Webhook 설정 */
@@ -417,6 +674,73 @@ textarea:focus {
     box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
+/* 애니메이션 */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 로딩 상태 스타일 */
+.send-btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid transparent;
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* 성공/에러 상태 (로그용) */
+.response-log .log-entry.success .log-content {
+    background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+    border-left: 4px solid #38a169;
+}
+
+.response-log .log-entry.error .log-content {
+    background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+    border-left: 4px solid #e53e3e;
+}
+
+/* 기존 응답 영역 성공/에러 상태 */
+.response-area.success {
+    background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+    border-left: 4px solid #38a169;
+    color: #2d3748;
+}
+
+.response-area.error {
+    background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+    border-left: 4px solid #e53e3e;
+    color: #2d3748;
+}
+
 /* 반응형 디자인 */
 @media (max-width: 768px) {
     .container {
@@ -466,4 +790,41 @@ textarea:focus {
     .modal-footer {
         padding: 15px 20px;
     }
+    
+    .file-preview {
+        display: block;
+        width: 100%;
+    }
+    
+    .preview-image {
+        max-width: 100%;
+        max-height: 150px;
+    }
+    
+    .file-item {
+        padding: 12px;
+    }
+    
+    .file-remove {
+        top: 8px;
+        right: 8px;
+        padding: 4px 8px;
+        font-size: 0.75rem;
+    }
+}
+
+/* 파일 정보 향상 */
+.file-info .file-name {
+    font-weight: 500;
+    color: #495057;
+    font-size: 0.95rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+}
+
+/* 미리보기 이미지 클릭 시 확대 효과 */
+.preview-image {
+    cursor: pointer;
 }
