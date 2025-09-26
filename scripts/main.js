@@ -69,6 +69,46 @@ function switchTab(tabName) {
     console.log(`현재 탭: ${currentTab}`);
 }
 
+// 탭 초기화 함수 (새로 추가)
+function resetTab(tabName) {
+    console.log(`탭 초기화: ${tabName}`);
+    
+    // 확인 메시지
+    if (!confirm('현재 탭의 모든 내용을 초기화하시겠습니까?')) {
+        return;
+    }
+    
+    // 텍스트 입력 초기화
+    const contentTextarea = document.getElementById(`${tabName}-content`);
+    if (contentTextarea) {
+        contentTextarea.value = '';
+    }
+    
+    // 파일 초기화
+    removeFile(tabName);
+    
+    // IF24 탭의 경우 플랫폼 선택도 초기화
+    if (tabName === 'if24') {
+        const checkboxes = ['instagram-check', 'threads-check', 'x-check'];
+        checkboxes.forEach(checkboxId => {
+            const checkbox = document.getElementById(checkboxId);
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+        });
+    }
+    
+    // 응답 영역 초기화
+    const responseArea = document.getElementById(`${tabName}-response`);
+    if (responseArea) {
+        responseArea.innerHTML = '응답 결과가 여기에 표시됩니다...';
+        responseArea.className = 'response-area'; // 클래스 초기화
+    }
+    
+    // 알림 표시
+    showNotification(`${tabName.toUpperCase()} 탭이 초기화되었습니다.`, 'success');
+}
+
 // 설정 모달 열기
 function openSettings() {
     console.log('설정 모달 열기');
