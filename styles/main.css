@@ -243,8 +243,6 @@ body {
     min-width: 0;
 }
 
-
-
 .file-info .file-size {
     font-size: 0.8rem;
     color: #6c757d;
@@ -294,9 +292,34 @@ textarea:focus {
 
 /* 액션 섹션 */
 .action-section {
-    text-align: right;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
 }
 
+/* 초기화 버튼 */
+.reset-btn {
+    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.reset-btn:hover {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
+}
+
+/* 전송 버튼 */
 .send-btn {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -588,8 +611,8 @@ textarea:focus {
     gap: 10px;
 }
 
-/* 버튼 스타일 */
-.reset-btn {
+/* 모달 내 초기화 버튼 */
+.modal .reset-btn {
     background: #dc3545;
     color: white;
     border: none;
@@ -599,7 +622,7 @@ textarea:focus {
     transition: background-color 0.2s ease;
 }
 
-.reset-btn:hover {
+.modal .reset-btn:hover {
     background: #c82333;
 }
 
@@ -810,6 +833,16 @@ textarea:focus {
         right: 8px;
         padding: 4px 8px;
         font-size: 0.75rem;
+    }
+    
+    .action-section {
+        flex-direction: column-reverse;
+        gap: 10px;
+    }
+    
+    .reset-btn,
+    .send-btn {
+        width: 100%;
     }
 }
 

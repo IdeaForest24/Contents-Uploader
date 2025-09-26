@@ -71,12 +71,40 @@
     border-left: 4px solid #667eea;
 }
 
-/* IF24 전송 버튼 애니메이션 */
+/* IF24 전송 버튼 */
 #if24-tab .send-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     position: relative;
     overflow: hidden;
 }
 
+#if24-tab .send-btn:hover {
+    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* IF24 초기화 버튼 */
+#if24-tab .reset-btn {
+    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-right: 10px;
+}
+
+#if24-tab .reset-btn:hover {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
+}
+
+/* IF24 전송 버튼 애니메이션 */
 #if24-tab .send-btn::before {
     content: '';
     position: absolute;
@@ -105,7 +133,7 @@
 
 /* 로딩 상태 스타일 */
 #if24-tab .send-btn.loading {
-    background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
     cursor: not-allowed;
 }
 
