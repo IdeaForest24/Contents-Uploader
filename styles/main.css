@@ -14,7 +14,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-}/* styles/main.css */
+}
+
+/* styles/main.css */
 * {
     margin: 0;
     padding: 0;
@@ -195,65 +197,72 @@ body {
 }
 
 .file-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px;
+    display: block;
+    padding: 15px;
     background: white;
     border: 1px solid #dee2e6;
-    border-radius: 6px;
-    margin-bottom: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     transition: all 0.3s ease;
+    position: relative;
 }
 
 .file-item:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
 }
 
 /* 이미지 미리보기 스타일 */
 .file-preview {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex: 1;
-    min-width: 0; /* 텍스트 오버플로우 방지 */
+    display: block;
+    width: 100%;
 }
 
 .preview-image {
-    width: 100px;
-    height: 100px;
-    object-fit: cover;
+    width: 100%;
+    max-width: 300px;
+    height: auto;
+    max-height: 200px;
+    object-fit: contain;
     border-radius: 8px;
-    border: 1px solid #dee2e6;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    transition: transform 0.2s ease;
+    border: 2px solid #dee2e6;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    display: block;
+    margin: 0 auto;
+    background: #f8f9fa;
 }
 
 .preview-image:hover {
-    transform: scale(1.05);
+    transform: scale(1.02);
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
 }
 
 .file-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    flex: 1;
-    min-width: 0;
+    text-align: center;
+    margin-top: 10px;
+}
+
+.file-info .file-name {
+    font-weight: 500;
+    color: #495057;
+    font-size: 0.9rem;
+    display: block;
+    margin-bottom: 4px;
 }
 
 .file-info .file-size {
     font-size: 0.8rem;
     color: #6c757d;
-}
-
-.file-name {
-    color: #495057;
-    font-size: 0.9rem;
+    display: block;
 }
 
 .file-remove {
+    position: absolute;
+    top: 10px;
+    right: 10px;
     background: #dc3545;
     color: white;
     border: none;
@@ -262,13 +271,93 @@ body {
     cursor: pointer;
     font-size: 0.8rem;
     transition: all 0.2s ease;
-    flex-shrink: 0;
+    z-index: 10;
 }
 
 .file-remove:hover {
     background: #c82333;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transform: scale(1.05);
+}
+
+/* 이미지 미리보기 모달 스타일 */
+.image-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    animation: fadeIn 0.3s ease;
+}
+
+.image-modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-modal-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 90vh;
+    animation: zoomIn 0.3s ease;
+}
+
+.image-modal-content img {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.image-modal-close {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    font-size: 2rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    font-weight: bold;
+}
+
+.image-modal-close:hover {
+    background: #fff;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes zoomIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 /* 텍스트 영역 */
@@ -359,7 +448,6 @@ textarea:focus {
     font-size: 0.9rem;
 }
 
-/* 스크롤바 스타일링 */
 .response-log::-webkit-scrollbar {
     width: 8px;
 }
@@ -446,87 +534,14 @@ textarea:focus {
     color: #495057;
 }
 
-/* 이미지 미리보기 - 첨부파일 UI 스타일로 변경 */
-.file-preview {
-    display: block;
-    width: 100%;
-}
-
-.preview-image {
-    width: 100%;
-    max-width: 300px;
-    height: auto;
-    max-height: 200px;
-    object-fit: contain;
-    border-radius: 8px;
-    border: 2px solid #dee2e6;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
-    display: block;
-    margin: 0 auto;
-    background: #f8f9fa;
-}
-
-.preview-image:hover {
-    transform: scale(1.02);
-    border-color: #667eea;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-}
-
-.file-info {
-    text-align: center;
-    margin-top: 10px;
-}
-
-.file-info .file-name {
-    font-weight: 500;
-    color: #495057;
+/* 간단한 메시지 스타일 */
+.log-content .simple-message {
+    margin: 0;
     font-size: 0.9rem;
-    display: block;
-    margin-bottom: 4px;
-}
-
-.file-info .file-size {
-    font-size: 0.8rem;
-    color: #6c757d;
-    display: block;
-}
-
-.file-item {
-    display: block;
-    padding: 15px;
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    margin-bottom: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    transition: all 0.3s ease;
-    position: relative;
-}
-
-.file-item:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    transform: translateY(-2px);
-}
-
-.file-remove {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: #dc3545;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    transition: all 0.2s ease;
-    z-index: 10;
-}
-
-.file-remove:hover {
-    background: #c82333;
-    transform: scale(1.05);
+    color: #495057;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 /* 모달 */
@@ -611,7 +626,6 @@ textarea:focus {
     gap: 10px;
 }
 
-/* 모달 내 초기화 버튼 */
 .modal .reset-btn {
     background: #dc3545;
     color: white;
@@ -740,7 +754,6 @@ textarea:focus {
     animation: spin 1s linear infinite;
 }
 
-/* 성공/에러 상태 (로그용) */
 .response-log .log-entry.success .log-content {
     background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
     border-left: 4px solid #38a169;
@@ -751,7 +764,6 @@ textarea:focus {
     border-left: 4px solid #e53e3e;
 }
 
-/* 기존 응답 영역 성공/에러 상태 */
 .response-area.success {
     background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
     border-left: 4px solid #38a169;
@@ -844,20 +856,17 @@ textarea:focus {
     .send-btn {
         width: 100%;
     }
-}
-
-/* 파일 정보 향상 */
-.file-info .file-name {
-    font-weight: 500;
-    color: #495057;
-    font-size: 0.95rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 200px;
-}
-
-/* 미리보기 이미지 클릭 시 확대 효과 */
-.preview-image {
-    cursor: pointer;
+    
+    /* 모바일에서 이미지 미리보기 모달 */
+    .image-modal-content {
+        max-width: 95%;
+    }
+    
+    .image-modal-close {
+        top: 10px;
+        right: 10px;
+        width: 35px;
+        height: 35px;
+        font-size: 1.5rem;
+    }
 }
