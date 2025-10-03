@@ -5,7 +5,6 @@ async function sendDuduContent(content, files, responseArea, sendBtn, responseCa
     console.log('Dudu 콘텐츠 전송 시작');
     
     try {
-        // Dudu Webhook URL 확인
         const webhookUrl = webhookSettings.dudu;
         
         if (!webhookUrl) {
@@ -14,10 +13,8 @@ async function sendDuduContent(content, files, responseArea, sendBtn, responseCa
         
         console.log('Dudu Webhook URL:', webhookUrl);
         
-        // Dudu 전용 콘텐츠 최적화
         const optimizedContent = optimizeDuduContent(content);
         
-        // FormData 생성
         const formData = new FormData();
         formData.append('content', optimizedContent);
         formData.append('platform', 'dudu');
@@ -27,14 +24,12 @@ async function sendDuduContent(content, files, responseArea, sendBtn, responseCa
         formData.append('contentType', 'social');
         formData.append('mood', analyzeDuduMood(content));
         
-        // 파일 추가 (단일 파일)
         if (files && files.length > 0) {
             formData.append('image_0', files[0]);
         }
         
         console.log('Dudu FormData 생성 완료, 웹훅 전송 시도...');
         
-        // 실제 웹훅 전송
         const response = await fetch(webhookUrl, {
             method: 'POST',
             body: formData,
@@ -49,35 +44,14 @@ async function sendDuduContent(content, files, responseArea, sendBtn, responseCa
         
         let result;
         try {
-            // 먼저 텍스트로 응답을 읽음
-            const responseText = await response.text();
-            console.log('Dudu 응답 텍스트:', responseText);
-            
-            // JSON 파싱 시도
-            if (responseText.trim()) {
-                try {
-                    result = JSON.parse(responseText);
-                } catch (jsonError) {
-                    console.log('JSON 파싱 실패, 텍스트 응답 사용:', jsonError);
-                    result = {
-                        success: response.ok,
-                        message: responseText || response.statusText,
-                        status: response.status,
-                        rawResponse: responseText
-                    };
-                }
-            } else {
-                result = {
-                    success: response.ok,
-                    message: response.statusText || '빈 응답',
-                    status: response.status
-                };
-            }
-        } catch (error) {
-            console.error('응답 읽기 실패:', error);
+            // JSON으로 직접 파싱
+            result = await response.json();
+            console.log('JSON 응답:', result);
+        } catch (jsonError) {
+            console.error('JSON 파싱 실패:', jsonError);
             result = {
                 success: response.ok,
-                message: `응답 읽기 실패: ${error.message}`,
+                message: response.statusText || 'JSON 파싱 실패',
                 status: response.status
             };
         }
@@ -116,19 +90,13 @@ async function sendDuduContent(content, files, responseArea, sendBtn, responseCa
 function optimizeDuduContent(content) {
     let optimized = content;
     
-    // Dudu 플랫폼 특성에 맞는 최적화
-    // 1. 친근하고 캐주얼한 톤 조정
     optimized = makeDuduFriendly(optimized);
-    
-    // 2. 이모지 최적화
     optimized = optimizeDuduEmojis(optimized);
     
-    // 3. 길이 최적화 (3000자 제한)
     if (optimized.length > 3000) {
         optimized = optimized.substring(0, 2980) + '... 😊';
     }
     
-    // 4. Dudu 스타일 해시태그 추가
     optimized = addDuduHashtags(optimized);
     
     return optimized;
@@ -138,12 +106,10 @@ function optimizeDuduContent(content) {
 function makeDuduFriendly(content) {
     let friendly = content;
     
-    // 격식체를 반말로 변환 (간단한 패턴)
     friendly = friendly.replace(/습니다\./g, '해요!');
     friendly = friendly.replace(/입니다\./g, '이에요!');
     friendly = friendly.replace(/했습니다\./g, '했어요!');
     
-    // 시작 부분에 친근한 인사 추가
     if (!friendly.match(/^(안녕|하이|헬로|hi)/i)) {
         const greetings = ['안녕하세요! 😊', '하이! 👋', '반가워요! ✨'];
         const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
@@ -157,7 +123,6 @@ function makeDuduFriendly(content) {
 function optimizeDuduEmojis(content) {
     let optimized = content;
     
-    // 이모지가 부족하면 추가
     const emojiCount = (content.match(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]/gu) || []).length;
     
     if (emojiCount < 2) {
@@ -173,7 +138,6 @@ function optimizeDuduEmojis(content) {
 function addDuduHashtags(content) {
     let tagged = content;
     
-    // 기본 Dudu 해시태그가 없으면 추가
     const duduTags = ['#dudu', '#일상', '#소통'];
     const hasDuduTag = duduTags.some(tag => content.toLowerCase().includes(tag.toLowerCase()));
     
@@ -229,22 +193,18 @@ function calculateDuduReadability(content) {
         return acc + words;
     }, 0) / sentences.length;
     
-    // 15단어 이하면 좋은 가독성
     return Math.max(0, Math.min(100, 100 - (avgWordsPerSentence - 15) * 5));
 }
 
 // Dudu 친근함 점수 계산
 function calculateDuduFriendliness(content) {
-    let score = 50; // 기본 점수
+    let score = 50;
     
-    // 이모지 사용
     const emojiCount = (content.match(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]/gu) || []).length;
     score += Math.min(20, emojiCount * 5);
     
-    // 반말 사용
     if (content.includes('해요') || content.includes('이에요')) score += 15;
     
-    // 친근한 표현
     const friendlyExpressions = ['안녕', '반가', '고마워', '감사해'];
     friendlyExpressions.forEach(expr => {
         if (content.includes(expr)) score += 5;
@@ -281,7 +241,6 @@ function suggestDuduImprovements(content) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Dudu 모듈 초기화');
     
-    // Dudu 콘텐츠 실시간 분석 및 제안
     const duduTextarea = document.getElementById('dudu-content');
     if (duduTextarea) {
         let suggestionTimeout;
@@ -289,7 +248,6 @@ document.addEventListener('DOMContentLoaded', function() {
         duduTextarea.addEventListener('input', function() {
             clearTimeout(suggestionTimeout);
             
-            // 1초 디바운스
             suggestionTimeout = setTimeout(() => {
                 const content = this.value;
                 if (content.length > 20) {
@@ -301,7 +259,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 1000);
         });
         
-        // 포커스 시 친근한 플레이스홀더
         duduTextarea.addEventListener('focus', function() {
             if (this.placeholder === '본문 내용을 입력하세요...') {
                 this.placeholder = '오늘 있었던 일을 친구에게 이야기하듯 써보세요! 😊';
@@ -315,23 +272,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Dudu 전용 키보드 단축키
     document.addEventListener('keydown', function(e) {
         if (currentTab !== 'dudu') return;
         
-        // Ctrl+Enter로 전송
         if (e.ctrlKey && e.key === 'Enter') {
             e.preventDefault();
             sendContent('dudu');
         }
         
-        // Ctrl+H로 도움말 표시
         if (e.ctrlKey && e.key === 'h') {
             e.preventDefault();
             showDuduHelp();
         }
         
-        // Ctrl+S로 제안 보기
         if (e.ctrlKey && e.key === 's') {
             e.preventDefault();
             const content = document.getElementById('dudu-content').value;
@@ -350,7 +303,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Dudu 탭 활성화 시 특별 효과
     const duduTab = document.querySelector('[onclick="switchTab(\'dudu\')"]');
     if (duduTab) {
         duduTab.addEventListener('click', function() {

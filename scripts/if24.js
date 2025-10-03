@@ -46,35 +46,14 @@ async function sendIF24Content(content, files, responseArea, sendBtn, responseCa
         
         let result;
         try {
-            // 먼저 텍스트로 응답을 읽음
-            const responseText = await response.text();
-            console.log('응답 텍스트:', responseText);
-            
-            // JSON 파싱 시도
-            if (responseText.trim()) {
-                try {
-                    result = JSON.parse(responseText);
-                } catch (jsonError) {
-                    console.log('JSON 파싱 실패, 텍스트 응답 사용:', jsonError);
-                    result = {
-                        success: response.ok,
-                        message: responseText || response.statusText,
-                        status: response.status,
-                        rawResponse: responseText
-                    };
-                }
-            } else {
-                result = {
-                    success: response.ok,
-                    message: response.statusText || '빈 응답',
-                    status: response.status
-                };
-            }
-        } catch (error) {
-            console.error('응답 읽기 실패:', error);
+            // JSON으로 직접 파싱
+            result = await response.json();
+            console.log('JSON 응답:', result);
+        } catch (jsonError) {
+            console.error('JSON 파싱 실패:', jsonError);
             result = {
                 success: response.ok,
-                message: `응답 읽기 실패: ${error.message}`,
+                message: response.statusText || 'JSON 파싱 실패',
                 status: response.status
             };
         }
@@ -136,17 +115,14 @@ function optimizeContentForPlatform(content, platform) {
     
     switch(platform) {
         case 'instagram':
-            // 인스타그램: 해시태그 최적화, 길이 제한
             optimized = addInstagramOptimization(content);
             break;
             
         case 'threads':
-            // 스레드: 스레드 형식 최적화
             optimized = addThreadsOptimization(content);
             break;
             
         case 'x':
-            // X(트위터): 280자 제한, 해시태그 최적화
             optimized = addXOptimization(content);
             break;
     }
@@ -156,15 +132,12 @@ function optimizeContentForPlatform(content, platform) {
 
 // 인스타그램 최적화
 function addInstagramOptimization(content) {
-    // 해시태그 추가 및 최적화
     let optimized = content;
     
-    // 기본 해시태그가 없으면 추가
     if (!content.includes('#')) {
         optimized += '\n\n#instagram #daily #photo';
     }
     
-    // 2200자 제한
     if (optimized.length > 2200) {
         optimized = optimized.substring(0, 2200) + '...';
     }
@@ -174,10 +147,8 @@ function addInstagramOptimization(content) {
 
 // 스레드 최적화
 function addThreadsOptimization(content) {
-    // 스레드 형식 최적화
     let optimized = content;
     
-    // 500자 단위로 분할 (스레드 특성상)
     if (optimized.length > 500) {
         const parts = [];
         let currentPart = '';
@@ -196,7 +167,6 @@ function addThreadsOptimization(content) {
             parts.push(currentPart);
         }
         
-        // 스레드 번호 업데이트
         const totalParts = parts.length;
         optimized = parts.map((part, index) => 
             part.replace('(1/n)', `(${index + 1}/${totalParts})`)
@@ -210,12 +180,10 @@ function addThreadsOptimization(content) {
 function addXOptimization(content) {
     let optimized = content;
     
-    // 280자 제한
     if (optimized.length > 280) {
         optimized = optimized.substring(0, 270) + '... (1/n)';
     }
     
-    // 해시태그 최적화 (최대 2개)
     const hashtagCount = (optimized.match(/#/g) || []).length;
     if (hashtagCount === 0) {
         optimized += ' #twitter';
@@ -228,7 +196,6 @@ function addXOptimization(content) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('IF24 모듈 초기화');
     
-    // 플랫폼 선택 체크박스 이벤트
     const checkboxes = ['instagram-check', 'threads-check', 'x-check'];
     
     checkboxes.forEach(checkboxId => {
@@ -237,11 +204,9 @@ document.addEventListener('DOMContentLoaded', function() {
             checkbox.addEventListener('change', function() {
                 console.log(`${checkboxId} 상태 변경:`, this.checked);
                 
-                // 최소 하나는 선택되어야 함 (선택사항)
                 const selectedCount = getSelectedPlatforms().length;
                 console.log(`선택된 플랫폼 수: ${selectedCount}`);
                 
-                // 체크박스 애니메이션 효과
                 if (this.checked) {
                     this.parentElement.style.transform = 'scale(1.05)';
                     setTimeout(() => {
@@ -252,18 +217,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // IF24 전용 키보드 단축키
     document.addEventListener('keydown', function(e) {
-        // 현재 탭이 IF24일 때만 작동
         if (currentTab !== 'if24') return;
         
-        // Ctrl+Enter로 전송
         if (e.ctrlKey && e.key === 'Enter') {
             e.preventDefault();
             sendContent('if24');
         }
         
-        // Ctrl+1,2,3으로 플랫폼 토글
         if (e.ctrlKey && ['1', '2', '3'].includes(e.key)) {
             e.preventDefault();
             const checkboxes = ['instagram-check', 'threads-check', 'x-check'];

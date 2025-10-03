@@ -5,7 +5,6 @@ async function sendCreBlackContent(content, files, responseArea, sendBtn, respon
     console.log('CreBlack 콘텐츠 전송 시작');
     
     try {
-        // CreBlack Webhook URL 확인
         const webhookUrl = webhookSettings.creblack;
         
         if (!webhookUrl) {
@@ -14,10 +13,8 @@ async function sendCreBlackContent(content, files, responseArea, sendBtn, respon
         
         console.log('CreBlack Webhook URL:', webhookUrl);
         
-        // CreBlack 전용 콘텐츠 최적화
         const optimizedContent = optimizeCreBlackContent(content);
         
-        // FormData 생성
         const formData = new FormData();
         formData.append('content', optimizedContent);
         formData.append('platform', 'creblack');
@@ -26,14 +23,12 @@ async function sendCreBlackContent(content, files, responseArea, sendBtn, respon
         formData.append('tab', 'creblack');
         formData.append('contentType', 'creative');
         
-        // 파일 추가 (단일 파일)
         if (files && files.length > 0) {
             formData.append('image_0', files[0]);
         }
         
         console.log('CreBlack FormData 생성 완료, 웹훅 전송 시도...');
         
-        // 실제 웹훅 전송
         const response = await fetch(webhookUrl, {
             method: 'POST',
             body: formData,
@@ -47,35 +42,14 @@ async function sendCreBlackContent(content, files, responseArea, sendBtn, respon
         
         let result;
         try {
-            // 먼저 텍스트로 응답을 읽음
-            const responseText = await response.text();
-            console.log('CreBlack 응답 텍스트:', responseText);
-            
-            // JSON 파싱 시도
-            if (responseText.trim()) {
-                try {
-                    result = JSON.parse(responseText);
-                } catch (jsonError) {
-                    console.log('JSON 파싱 실패, 텍스트 응답 사용:', jsonError);
-                    result = {
-                        success: response.ok,
-                        message: responseText || response.statusText,
-                        status: response.status,
-                        rawResponse: responseText
-                    };
-                }
-            } else {
-                result = {
-                    success: response.ok,
-                    message: response.statusText || '빈 응답',
-                    status: response.status
-                };
-            }
-        } catch (error) {
-            console.error('응답 읽기 실패:', error);
+            // JSON으로 직접 파싱
+            result = await response.json();
+            console.log('JSON 응답:', result);
+        } catch (jsonError) {
+            console.error('JSON 파싱 실패:', jsonError);
             result = {
                 success: response.ok,
-                message: `응답 읽기 실패: ${error.message}`,
+                message: response.statusText || 'JSON 파싱 실패',
                 status: response.status
             };
         }
@@ -114,21 +88,16 @@ async function sendCreBlackContent(content, files, responseArea, sendBtn, respon
 function optimizeCreBlackContent(content) {
     let optimized = content;
     
-    // CreBlack 플랫폼 특성에 맞는 최적화
-    // 1. 창작자 중심의 콘텐츠 포맷팅
     if (!content.includes('[창작자]') && !content.includes('[Creator]')) {
         optimized = '[창작자 콘텐츠]\n\n' + optimized;
     }
     
-    // 2. 태그 정규화
     optimized = normalizeCreBlackTags(optimized);
     
-    // 3. 길이 최적화 (5000자 제한)
     if (optimized.length > 5000) {
         optimized = optimized.substring(0, 4980) + '...\n\n[더 보기]';
     }
     
-    // 4. 포맷팅 개선
     optimized = improveCreBlackFormatting(optimized);
     
     return optimized;
@@ -136,10 +105,8 @@ function optimizeCreBlackContent(content) {
 
 // CreBlack 태그 정규화
 function normalizeCreBlackTags(content) {
-    // 일반적인 해시태그를 CreBlack 스타일로 변환
     let normalized = content;
     
-    // 기본 크리에이터 태그 추가
     const creatorTags = ['#창작', '#아트', '#디자인', '#크리에이터'];
     const hasCreatorTag = creatorTags.some(tag => content.includes(tag));
     
@@ -154,14 +121,10 @@ function normalizeCreBlackTags(content) {
 function improveCreBlackFormatting(content) {
     let formatted = content;
     
-    // 1. 단락 구분 개선
     formatted = formatted.replace(/\n{3,}/g, '\n\n');
-    
-    // 2. 특수 문자 정규화
     formatted = formatted.replace(/[""]/g, '"');
     formatted = formatted.replace(/['']/g, "'");
     
-    // 3. CreBlack 전용 이모지 추가 (선택적)
     if (!formatted.includes('🎨') && !formatted.includes('✨')) {
         formatted = '🎨 ' + formatted;
     }
@@ -198,7 +161,6 @@ function previewCreBlackContent(content) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('CreBlack 모듈 초기화');
     
-    // CreBlack 콘텐츠 실시간 분석
     const creblackTextarea = document.getElementById('creblack-content');
     if (creblackTextarea) {
         let analysisTimeout;
@@ -206,13 +168,11 @@ document.addEventListener('DOMContentLoaded', function() {
         creblackTextarea.addEventListener('input', function() {
             clearTimeout(analysisTimeout);
             
-            // 500ms 디바운스
             analysisTimeout = setTimeout(() => {
                 const content = this.value;
                 if (content.length > 10) {
                     const analysis = analyzeCreBlackContent(content);
                     
-                    // 실시간 피드백 표시 (선택적)
                     if (!analysis.isOptimized && content.length > 100) {
                         console.log('CreBlack 최적화 제안: 창작자 태그를 추가하세요.');
                     }
@@ -220,7 +180,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 500);
         });
         
-        // 포커스 시 플레이스홀더 변경
         creblackTextarea.addEventListener('focus', function() {
             if (this.placeholder === '본문 내용을 입력하세요...') {
                 this.placeholder = '창작자의 이야기를 들려주세요... 🎨';
@@ -234,17 +193,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // CreBlack 전용 키보드 단축키
     document.addEventListener('keydown', function(e) {
         if (currentTab !== 'creblack') return;
         
-        // Ctrl+Enter로 전송
         if (e.ctrlKey && e.key === 'Enter') {
             e.preventDefault();
             sendContent('creblack');
         }
         
-        // Ctrl+P로 미리보기
         if (e.ctrlKey && e.key === 'p') {
             e.preventDefault();
             const content = document.getElementById('creblack-content').value;
@@ -258,7 +214,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // CreBlack 탭 활성화 시 특별 효과
     const creblackTab = document.querySelector('[onclick="switchTab(\'creblack\')"]');
     if (creblackTab) {
         creblackTab.addEventListener('click', function() {
