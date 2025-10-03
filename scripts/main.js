@@ -3,14 +3,14 @@
 // 전역 변수
 let currentTab = 'if24';
 let uploadedFiles = {
-    if24: null,      // 단일 파일로 변경
-    creblack: null,  // 단일 파일로 변경
-    dudu: null       // 단일 파일로 변경
+    if24: null,
+    creblack: null,
+    dudu: null
 };
 
-// 웹훅 설정 (수정된 구조)
+// 웹훅 설정
 let webhookSettings = {
-    if24: '',        // 통합된 IF24 웹훅 URL
+    if24: '',
     creblack: '',
     dudu: ''
 };
@@ -20,13 +20,13 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     loadSettings();
     setupFileUploads();
+    setupImagePreviewModal();
 });
 
 // 앱 초기화
 function initializeApp() {
     console.log('AI 콘텐츠 업로더 초기화 시작');
     
-    // 탭 버튼에 이벤트 리스너 추가
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const tabName = this.getAttribute('onclick').match(/'([^']+)'/)[1];
@@ -34,7 +34,6 @@ function initializeApp() {
         });
     });
 
-    // 모달 외부 클릭 시 닫기
     const modal = document.getElementById('settings-modal');
     if (modal) {
         modal.addEventListener('click', function(e) {
@@ -51,14 +50,12 @@ function initializeApp() {
 function switchTab(tabName) {
     console.log(`탭 전환: ${tabName}`);
     
-    // 이전 탭 비활성화
     const activeTabBtn = document.querySelector('.tab-btn.active');
     const activeTabContent = document.querySelector('.tab-content.active');
     
     if (activeTabBtn) activeTabBtn.classList.remove('active');
     if (activeTabContent) activeTabContent.classList.remove('active');
     
-    // 새 탭 활성화
     const newTabBtn = document.querySelector(`[onclick="switchTab('${tabName}')"]`);
     const newTabContent = document.getElementById(`${tabName}-tab`);
     
@@ -69,25 +66,21 @@ function switchTab(tabName) {
     console.log(`현재 탭: ${currentTab}`);
 }
 
-// 탭 초기화 함수 (새로 추가)
+// 탭 초기화 함수
 function resetTab(tabName) {
     console.log(`탭 초기화: ${tabName}`);
     
-    // 확인 메시지
     if (!confirm('현재 탭의 모든 내용을 초기화하시겠습니까?')) {
         return;
     }
     
-    // 텍스트 입력 초기화
     const contentTextarea = document.getElementById(`${tabName}-content`);
     if (contentTextarea) {
         contentTextarea.value = '';
     }
     
-    // 파일 초기화
     removeFile(tabName);
     
-    // IF24 탭의 경우 플랫폼 선택도 초기화
     if (tabName === 'if24') {
         const checkboxes = ['instagram-check', 'threads-check', 'x-check'];
         checkboxes.forEach(checkboxId => {
@@ -98,14 +91,12 @@ function resetTab(tabName) {
         });
     }
     
-    // 응답 영역 초기화
     const responseArea = document.getElementById(`${tabName}-response`);
     if (responseArea) {
         responseArea.innerHTML = '응답 결과가 여기에 표시됩니다...';
-        responseArea.className = 'response-area'; // 클래스 초기화
+        responseArea.className = 'response-area';
     }
     
-    // 알림 표시
     showNotification(`${tabName.toUpperCase()} 탭이 초기화되었습니다.`, 'success');
 }
 
@@ -116,7 +107,6 @@ function openSettings() {
     if (modal) {
         modal.classList.add('show');
         
-        // 현재 설정값 로드 (localStorage에서 불러온 값 포함)
         const if24Input = document.getElementById('if24-webhook');
         const creblackInput = document.getElementById('creblack-webhook');
         const duduInput = document.getElementById('dudu-webhook');
@@ -150,7 +140,6 @@ function saveSettings() {
     if (creblackInput) webhookSettings.creblack = creblackInput.value;
     if (duduInput) webhookSettings.dudu = duduInput.value;
     
-    // localStorage에 설정 저장
     try {
         localStorage.setItem('webhookSettings', JSON.stringify(webhookSettings));
         console.log('localStorage에 설정 저장 완료:', webhookSettings);
@@ -167,7 +156,6 @@ function saveSettings() {
 function loadSettings() {
     console.log('설정 로드 시작');
     
-    // localStorage에서 설정 불러오기
     try {
         const savedSettings = localStorage.getItem('webhookSettings');
         if (savedSettings) {
@@ -198,21 +186,19 @@ function setupFileUploads() {
             return;
         }
         
-        // 클릭 이벤트
         uploadArea.addEventListener('click', (e) => {
-            // 삭제 버튼 클릭 시에는 파일 선택기 열지 않음
-            if (e.target.classList.contains('file-remove')) {
+            // 삭제 버튼이나 미리보기 이미지 클릭 시에는 파일 선택기 열지 않음
+            if (e.target.classList.contains('file-remove') || 
+                e.target.classList.contains('preview-image')) {
                 return;
             }
             fileInput.click();
         });
         
-        // 파일 선택 이벤트
         fileInput.addEventListener('change', (e) => {
             handleFileSelect(e.target.files, tabName);
         });
         
-        // 드래그 앤 드롭 이벤트
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             uploadArea.classList.add('dragover');
@@ -232,43 +218,44 @@ function setupFileUploads() {
     console.log('파일 업로드 설정 완료');
 }
 
-// 파일 선택 처리 (단일 파일로 수정)
+// 파일 선택 처리
 function handleFileSelect(files, tabName) {
     console.log(`파일 선택 - 탭: ${tabName}, 파일 수: ${files.length}`);
     
     if (files.length === 0) return;
     
-    const file = files[0]; // 첫 번째 파일만 선택
+    const file = files[0];
     const fileList = document.getElementById(`${tabName}-file-list`);
     if (!fileList) return;
     
-    // 이미지 파일만 허용
     if (!file.type.startsWith('image/')) {
         showNotification('이미지 파일만 업로드 가능합니다.', 'error');
         return;
     }
     
-    // 파일 크기 체크 (10MB 제한)
     if (file.size > 10 * 1024 * 1024) {
         showNotification('파일 크기는 10MB 이하여야 합니다.', 'error');
         return;
     }
     
-    // 기존 파일 제거
     uploadedFiles[tabName] = file;
     
-    // 파일 목록 초기화
     fileList.innerHTML = '';
     
-    // 이미지 미리보기와 파일 정보 생성
     const fileReader = new FileReader();
     fileReader.onload = function(e) {
+        const imageUrl = e.target.result;
         const fileItem = document.createElement('div');
         fileItem.className = 'file-item';
         fileItem.innerHTML = `
             <button class="file-remove" onclick="removeFile('${tabName}', event)">✕ 삭제</button>
             <div class="file-preview">
-                <img src="${e.target.result}" alt="업로드된 이미지" class="preview-image">
+                <img src="${imageUrl}" 
+                     alt="업로드된 이미지" 
+                     class="preview-image" 
+                     onclick="openImagePreview('${imageUrl}', event)"
+                     style="cursor: pointer;"
+                     title="클릭하여 크게 보기">
                 <div class="file-info">
                     <span class="file-name">${file.name}</span>
                     <span class="file-size">${formatFileSize(file.size)}</span>
@@ -284,9 +271,68 @@ function handleFileSelect(files, tabName) {
     console.log(`업로드된 파일 (${tabName}):`, file.name);
 }
 
-// 파일 제거 (이벤트 버블링 방지 추가)
+// 이미지 미리보기 모달 설정
+function setupImagePreviewModal() {
+    // 이미지 미리보기 모달 HTML 생성
+    const modalHTML = `
+        <div id="image-preview-modal" class="image-modal">
+            <div class="image-modal-content">
+                <button class="image-modal-close" onclick="closeImagePreview()">✕</button>
+                <img id="image-preview-img" src="" alt="미리보기">
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // 모달 배경 클릭 시 닫기
+    const modal = document.getElementById('image-preview-modal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeImagePreview();
+            }
+        });
+    }
+    
+    // ESC 키로 모달 닫기
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeImagePreview();
+        }
+    });
+}
+
+// 이미지 미리보기 열기
+function openImagePreview(imageUrl, event) {
+    // 이벤트 버블링 방지 (파일 선택 창이 열리는 것을 막음)
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    
+    const modal = document.getElementById('image-preview-modal');
+    const img = document.getElementById('image-preview-img');
+    
+    if (modal && img) {
+        img.src = imageUrl;
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden'; // 배경 스크롤 방지
+    }
+}
+
+// 이미지 미리보기 닫기
+function closeImagePreview() {
+    const modal = document.getElementById('image-preview-modal');
+    
+    if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = ''; // 배경 스크롤 복구
+    }
+}
+
+// 파일 제거
 function removeFile(tabName, event) {
-    // 이벤트 버블링 방지
     if (event) {
         event.stopPropagation();
         event.preventDefault();
@@ -296,13 +342,11 @@ function removeFile(tabName, event) {
     
     uploadedFiles[tabName] = null;
     
-    // 파일 목록 초기화
     const fileList = document.getElementById(`${tabName}-file-list`);
     if (fileList) {
         fileList.innerHTML = '';
     }
     
-    // 파일 입력 초기화
     const fileInput = document.getElementById(`${tabName}-file-input`);
     if (fileInput) {
         fileInput.value = '';
@@ -320,13 +364,11 @@ function formatFileSize(bytes) {
 
 // 알림 표시
 function showNotification(message, type = 'info') {
-    // 기존 알림 제거
     const existingNotification = document.querySelector('.notification');
     if (existingNotification) {
         existingNotification.remove();
     }
     
-    // 새 알림 생성
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     notification.textContent = message;
@@ -344,7 +386,6 @@ function showNotification(message, type = 'info') {
         word-wrap: break-word;
     `;
     
-    // 타입별 색상 설정
     switch(type) {
         case 'success':
             notification.style.backgroundColor = '#38a169';
@@ -361,7 +402,6 @@ function showNotification(message, type = 'info') {
     
     document.body.appendChild(notification);
     
-    // 3초 후 자동 제거
     setTimeout(() => {
         if (notification.parentNode) {
             notification.style.animation = 'slideOutRight 0.3s ease-in';
@@ -374,12 +414,12 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-// 공통 전송 함수 (단일 파일로 수정 + 1분 타임아웃 추가)
+// 공통 전송 함수
 function sendContent(tabName) {
     console.log(`콘텐츠 전송 시작 - 탭: ${tabName}`);
     
     const content = document.getElementById(`${tabName}-content`).value;
-    const file = uploadedFiles[tabName]; // 단일 파일
+    const file = uploadedFiles[tabName];
     const responseArea = document.getElementById(`${tabName}-response`);
     const sendBtn = document.querySelector(`#${tabName}-tab .send-btn`);
     
@@ -389,18 +429,15 @@ function sendContent(tabName) {
         return;
     }
     
-    // 입력 검증
     if (!content.trim() && !file) {
         showNotification('본문 내용 또는 이미지를 입력해주세요.', 'warning');
         return;
     }
     
-    // 버튼 상태 변경
     sendBtn.classList.add('loading');
     sendBtn.disabled = true;
     sendBtn.textContent = '전송 중...';
     
-    // 응답 영역 로그 시작 메시지 추가
     const timestamp = new Date().toLocaleString('ko-KR');
     const startLogEntry = document.createElement('div');
     startLogEntry.className = 'log-entry';
@@ -411,7 +448,6 @@ function sendContent(tabName) {
         </div>
     `;
     
-    // 응답 영역 초기화 및 로그 형식으로 변경
     if (!responseArea.classList.contains('response-log')) {
         responseArea.innerHTML = '';
         responseArea.classList.remove('response-area');
@@ -421,10 +457,8 @@ function sendContent(tabName) {
     responseArea.appendChild(startLogEntry);
     responseArea.scrollTop = responseArea.scrollHeight;
     
-    // 파일 배열로 변환 (기존 함수들과의 호환성을 위해)
     const filesArray = file ? [file] : [];
     
-    // 1분 타임아웃 설정
     const timeoutId = setTimeout(() => {
         resetSendButton(sendBtn);
         const timeoutResponse = {
@@ -434,15 +468,13 @@ function sendContent(tabName) {
             timeout: true
         };
         handleResponse(timeoutResponse, responseArea, sendBtn);
-    }, 60000); // 60초
+    }, 60000);
     
-    // 성공/실패 응답 처리 함수 래핑
     const handleResponseWithTimeout = (response, successMessage) => {
-        clearTimeout(timeoutId); // 타임아웃 제거
+        clearTimeout(timeoutId);
         handleResponse(response, responseArea, sendBtn, successMessage);
     };
     
-    // 탭별 전송 로직 호출
     switch(tabName) {
         case 'if24':
             if (typeof sendIF24Content === 'function') {
@@ -491,32 +523,69 @@ function resetSendButton(sendBtn) {
     }
 }
 
-// 유틸리티 함수: FormData 생성
-function createFormData(content, files, additionalData = {}) {
-    const formData = new FormData();
-    formData.append('content', content);
-    
-    files.forEach((file, index) => {
-        formData.append(`image_${index}`, file);
-    });
-    
-    Object.keys(additionalData).forEach(key => {
-        formData.append(key, JSON.stringify(additionalData[key]));
-    });
-    
-    return formData;
-}
-
-// 유틸리티 함수: 응답 처리 (스크롤 방식으로 변경)
+// 응답 처리
 function handleResponse(response, responseArea, sendBtn, successMessage = '전송 완료') {
     resetSendButton(sendBtn);
     
-    // 현재 시간 추가
+    console.log('=== handleResponse 디버깅 시작 ===');
+    console.log('전체 response 객체:', response);
+    
     const timestamp = new Date().toLocaleString('ko-KR');
     const logEntry = document.createElement('div');
     logEntry.className = 'log-entry';
     
-    if (response.success) {
+    // make.com 응답 파싱
+    let makeStatus = null;
+    let makeMessage = '';
+    
+    if (response.result) {
+        console.log('response.result 존재:', response.result);
+        console.log('response.result.message 타입:', typeof response.result.message);
+        
+        // response.result.message가 이미 객체인 경우
+        if (response.result.message && typeof response.result.message === 'object') {
+            console.log('message가 이미 객체:', response.result.message);
+            makeStatus = response.result.message.status;
+            makeMessage = response.result.message.message || '';
+            console.log('✓ 객체에서 직접 추출 - status:', makeStatus, 'message:', makeMessage);
+        }
+        // response.result.message가 JSON 문자열인 경우
+        else if (response.result.message && typeof response.result.message === 'string') {
+            try {
+                console.log('message가 문자열, 파싱 시도:', response.result.message);
+                const makeResponse = JSON.parse(response.result.message);
+                makeStatus = makeResponse.status;
+                makeMessage = makeResponse.message || '';
+                console.log('✓ 문자열 파싱 성공 - status:', makeStatus, 'message:', makeMessage);
+            } catch (e) {
+                console.error('✗ JSON 파싱 실패:', e);
+                makeMessage = response.result.message;
+            }
+        }
+        // response.result가 직접 make.com Body인 경우 (백업)
+        else if (response.result.status && typeof response.result.status === 'string') {
+            makeStatus = response.result.status;
+            makeMessage = response.result.message || '';
+            console.log('✓ result에서 직접 추출 - status:', makeStatus, 'message:', makeMessage);
+        }
+    } else {
+        console.log('✗ response.result가 없음');
+    }
+    
+    // 성공 여부 판단
+    const isSuccess = response.success && 
+                     makeStatus && 
+                     typeof makeStatus === 'string' &&
+                     (makeStatus.toLowerCase() === 'success');
+    
+    console.log('최종 판단:');
+    console.log('- response.success:', response.success);
+    console.log('- makeStatus:', makeStatus, '(타입:', typeof makeStatus, ')');
+    console.log('- makeMessage:', makeMessage);
+    console.log('- isSuccess:', isSuccess);
+    console.log('=== 디버깅 종료 ===');
+    
+    if (isSuccess) {
         logEntry.classList.add('success');
         logEntry.innerHTML = `
             <div class="log-header">
@@ -524,25 +593,25 @@ function handleResponse(response, responseArea, sendBtn, successMessage = '전�
                 <span class="log-status success">✅ ${successMessage}</span>
             </div>
             <div class="log-content">
-                <pre>${JSON.stringify(response, null, 2)}</pre>
+                <div class="simple-message">${makeMessage || '전송이 완료되었습니다.'}</div>
             </div>
         `;
         showNotification(successMessage, 'success');
     } else {
         logEntry.classList.add('error');
+        const errorMessage = makeMessage || response.error || '알 수 없는 오류가 발생했습니다.';
         logEntry.innerHTML = `
             <div class="log-header">
                 <span class="log-time">[${timestamp}]</span>
                 <span class="log-status error">❌ 전송 실패</span>
             </div>
             <div class="log-content">
-                <pre>오류: ${response.error || '알 수 없는 오류'}</pre>
+                <div class="simple-message">${errorMessage}</div>
             </div>
         `;
         showNotification('전송 실패', 'error');
     }
     
-    // 기존 "전송 중..." 텍스트 제거하고 로그 추가
     if (responseArea.textContent === '전송 중...') {
         responseArea.innerHTML = '';
         responseArea.classList.remove('response-area');
@@ -550,75 +619,10 @@ function handleResponse(response, responseArea, sendBtn, successMessage = '전�
     }
     
     responseArea.appendChild(logEntry);
-    
-    // 스크롤을 맨 아래로
     responseArea.scrollTop = responseArea.scrollHeight;
 }
 
-// CSS 애니메이션 추가
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideInRight {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-    
-    @keyframes slideOutRight {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-    }
-    
-    /* 이미지 미리보기 스타일 */
-    .file-preview {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex: 1;
-    }
-    
-    .preview-image {
-        width: 60px;
-        height: 60px;
-        object-fit: cover;
-        border-radius: 4px;
-        border: 1px solid #dee2e6;
-    }
-    
-    .file-info {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }
-    
-    .file-info .file-name {
-        font-weight: 500;
-    }
-    
-    .file-info .file-size {
-        font-size: 0.8rem;
-        color: #6c757d;
-    }
-    
-    .file-item {
-        align-items: center;
-        padding: 12px;
-    }
-`;
-document.head.appendChild(style);
-
-// 설정 초기화 (추가 기능)
+// 설정 초기화
 function resetSettings() {
     console.log('설정 초기화');
     
@@ -629,7 +633,6 @@ function resetSettings() {
             dudu: ''
         };
         
-        // localStorage에서도 제거
         try {
             localStorage.removeItem('webhookSettings');
             console.log('localStorage에서 설정 제거 완료');
@@ -637,7 +640,6 @@ function resetSettings() {
             console.error('localStorage 제거 실패:', error);
         }
         
-        // 모달의 입력 필드도 초기화
         const if24Input = document.getElementById('if24-webhook');
         const creblackInput = document.getElementById('creblack-webhook');
         const duduInput = document.getElementById('dudu-webhook');
