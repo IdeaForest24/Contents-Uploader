@@ -42,19 +42,9 @@ async function sendDuduContent(content, files, responseArea, sendBtn, responseCa
         
         console.log('Dudu 웹훅 응답 상태:', response.status, response.statusText);
         
-        let result;
-        try {
-            // JSON으로 직접 파싱
-            result = await response.json();
-            console.log('JSON 응답:', result);
-        } catch (jsonError) {
-            console.error('JSON 파싱 실패:', jsonError);
-            result = {
-                success: response.ok,
-                message: response.statusText || 'JSON 파싱 실패',
-                status: response.status
-            };
-        }
+        // ✅ 개선: 공통 응답 처리 함수 사용
+        const result = await parseWebhookResponse(response);
+        console.log('파싱된 응답:', result);
         
         if (response.ok) {
             const successResponse = {
@@ -126,7 +116,7 @@ function optimizeDuduEmojis(content) {
     const emojiCount = (content.match(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]/gu) || []).length;
     
     if (emojiCount < 2) {
-        const duduEmojis = ['😊', '💖', '✨', '🌟', '🎉', '💝', '🤗', '😄'];
+        const duduEmojis = ['😊', '💖', '✨', '🌟', '🎉', '👍', '🤗', '😄'];
         const randomEmoji = duduEmojis[Math.floor(Math.random() * duduEmojis.length)];
         optimized += ' ' + randomEmoji;
     }
@@ -319,16 +309,16 @@ document.addEventListener('DOMContentLoaded', function() {
 function showDuduHelp() {
     const helpMessage = `
 Dudu 작성 팁! 😊
-• 친근하고 자연스러운 말투 사용
-• 이모지 적극 활용 ✨
-• 짧고 간단한 문장 구성
-• 긍정적인 표현 사용 💖
-• 일상적인 이야기 공유
+- 친근하고 자연스러운 말투 사용
+- 이모지 적극 활용 ✨
+- 짧고 간단한 문장 구성
+- 긍정적인 표현 사용 💖
+- 일상적인 이야기 공유
 
 단축키:
-• Ctrl+Enter: 전송
-• Ctrl+S: 개선 제안 보기
-• Ctrl+H: 도움말 (지금 이거!)
+- Ctrl+Enter: 전송
+- Ctrl+S: 개선 제안 보기
+- Ctrl+H: 도움말 (지금 이거!)
     `;
     
     if (typeof showNotification === 'function') {

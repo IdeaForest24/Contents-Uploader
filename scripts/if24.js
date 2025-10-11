@@ -5,14 +5,12 @@ async function sendIF24Content(content, files, responseArea, sendBtn, responseCa
     console.log('IF24 콘텐츠 전송 시작');
     
     try {
-        // 선택된 플랫폼 확인
         const selectedPlatforms = getSelectedPlatforms();
         
         if (selectedPlatforms.length === 0) {
             throw new Error('최소 하나의 플랫폼을 선택해주세요.');
         }
         
-        // IF24 통합 웹훅 URL 확인
         const webhookUrl = webhookSettings.if24;
         if (!webhookUrl) {
             throw new Error('IF24 Webhook URL이 설정되지 않았습니다.');
@@ -21,7 +19,6 @@ async function sendIF24Content(content, files, responseArea, sendBtn, responseCa
         console.log('선택된 플랫폼:', selectedPlatforms);
         console.log('IF24 Webhook URL:', webhookUrl);
         
-        // FormData 생성
         const formData = new FormData();
         formData.append('content', content);
         formData.append('platforms', JSON.stringify(selectedPlatforms));
@@ -29,14 +26,12 @@ async function sendIF24Content(content, files, responseArea, sendBtn, responseCa
         formData.append('source', 'AI_Content_Uploader');
         formData.append('tab', 'if24');
         
-        // 파일 추가 (단일 파일)
         if (files && files.length > 0) {
             formData.append('image_0', files[0]);
         }
         
         console.log('FormData 생성 완료, 웹훅 전송 시도...');
         
-        // 실제 웹훅 전송
         const response = await fetch(webhookUrl, {
             method: 'POST',
             body: formData
@@ -44,19 +39,9 @@ async function sendIF24Content(content, files, responseArea, sendBtn, responseCa
         
         console.log('웹훅 응답 상태:', response.status, response.statusText);
         
-        let result;
-        try {
-            // JSON으로 직접 파싱
-            result = await response.json();
-            console.log('JSON 응답:', result);
-        } catch (jsonError) {
-            console.error('JSON 파싱 실패:', jsonError);
-            result = {
-                success: response.ok,
-                message: response.statusText || 'JSON 파싱 실패',
-                status: response.status
-            };
-        }
+        // ✅ 개선: 공통 응답 처리 함수 사용
+        const result = await parseWebhookResponse(response);
+        console.log('파싱된 응답:', result);
         
         if (response.ok) {
             const successResponse = {

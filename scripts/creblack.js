@@ -40,19 +40,9 @@ async function sendCreBlackContent(content, files, responseArea, sendBtn, respon
         
         console.log('CreBlack 웹훅 응답 상태:', response.status, response.statusText);
         
-        let result;
-        try {
-            // JSON으로 직접 파싱
-            result = await response.json();
-            console.log('JSON 응답:', result);
-        } catch (jsonError) {
-            console.error('JSON 파싱 실패:', jsonError);
-            result = {
-                success: response.ok,
-                message: response.statusText || 'JSON 파싱 실패',
-                status: response.status
-            };
-        }
+        // ✅ 개선: 공통 응답 처리 함수 사용
+        const result = await parseWebhookResponse(response);
+        console.log('파싱된 응답:', result);
         
         if (response.ok) {
             const successResponse = {

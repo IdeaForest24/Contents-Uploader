@@ -138,7 +138,7 @@ function saveSettings() {
     
     if (if24Input) webhookSettings.if24 = if24Input.value;
     if (creblackInput) webhookSettings.creblack = creblackInput.value;
-    if (duduInput) webhookSettings.dudu = duduInput.value;
+    if (duduInput) duduInput.value = duduInput.value;
     
     try {
         localStorage.setItem('webhookSettings', JSON.stringify(webhookSettings));
@@ -187,7 +187,6 @@ function setupFileUploads() {
         }
         
         uploadArea.addEventListener('click', (e) => {
-            // 삭제 버튼이나 미리보기 이미지 클릭 시에는 파일 선택기 열지 않음
             if (e.target.classList.contains('file-remove') || 
                 e.target.classList.contains('preview-image')) {
                 return;
@@ -273,7 +272,6 @@ function handleFileSelect(files, tabName) {
 
 // 이미지 미리보기 모달 설정
 function setupImagePreviewModal() {
-    // 이미지 미리보기 모달 HTML 생성
     const modalHTML = `
         <div id="image-preview-modal" class="image-modal">
             <div class="image-modal-content">
@@ -285,7 +283,6 @@ function setupImagePreviewModal() {
     
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     
-    // 모달 배경 클릭 시 닫기
     const modal = document.getElementById('image-preview-modal');
     if (modal) {
         modal.addEventListener('click', function(e) {
@@ -295,7 +292,6 @@ function setupImagePreviewModal() {
         });
     }
     
-    // ESC 키로 모달 닫기
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeImagePreview();
@@ -305,7 +301,6 @@ function setupImagePreviewModal() {
 
 // 이미지 미리보기 열기
 function openImagePreview(imageUrl, event) {
-    // 이벤트 버블링 방지 (파일 선택 창이 열리는 것을 막음)
     if (event) {
         event.stopPropagation();
         event.preventDefault();
@@ -317,7 +312,7 @@ function openImagePreview(imageUrl, event) {
     if (modal && img) {
         img.src = imageUrl;
         modal.classList.add('show');
-        document.body.style.overflow = 'hidden'; // 배경 스크롤 방지
+        document.body.style.overflow = 'hidden';
     }
 }
 
@@ -327,7 +322,7 @@ function closeImagePreview() {
     
     if (modal) {
         modal.classList.remove('show');
-        document.body.style.overflow = ''; // 배경 스크롤 복구
+        document.body.style.overflow = '';
     }
 }
 
@@ -412,6 +407,35 @@ function showNotification(message, type = 'info') {
             }, 300);
         }
     }, 3000);
+}
+
+// ✅ 개선: 공통 웹훅 응답 처리 함수
+function parseWebhookResponse(response) {
+    return response.text().then(text => {
+        console.log('원본 응답 텍스트:', text);
+        
+        try {
+            const parsed = JSON.parse(text);
+            console.log('JSON 파싱 성공:', parsed);
+            return parsed;
+        } catch (e) {
+            console.log('JSON 파싱 실패, 텍스트 분석 시작');
+            
+            if (text.includes('"status":"success"') || text.includes('success')) {
+                console.log('텍스트에서 success 감지');
+                return { 
+                    status: 'success', 
+                    message: text 
+                };
+            }
+            
+            console.log('에러로 처리');
+            return { 
+                status: 'error', 
+                message: text || 'JSON 파싱 실패' 
+            };
+        }
+    });
 }
 
 // 공통 전송 함수
@@ -523,67 +547,64 @@ function resetSendButton(sendBtn) {
     }
 }
 
-// 응답 처리
+// ✅ 개선: 응답 처리 함수 (단순화됨)
 function handleResponse(response, responseArea, sendBtn, successMessage = '전송 완료') {
     resetSendButton(sendBtn);
     
-    console.log('=== handleResponse 디버깅 시작 ===');
-    console.log('전체 response 객체:', response);
+    console.log('=== handleResponse 시작 ===');
+    console.log('전체 response:', response);
     
-    const timestamp = new Date().toLocaleString('ko-KR');
+    const timestamp = new Date().toLocaleTimeString('ko-KR');
     const logEntry = document.createElement('div');
     logEntry.className = 'log-entry';
     
-    // make.com 응답 파싱
+    // ✅ 단순화된 파싱
     let makeStatus = null;
     let makeMessage = '';
     
     if (response.result) {
         console.log('response.result 존재:', response.result);
-        console.log('response.result.message 타입:', typeof response.result.message);
         
-        // response.result.message가 이미 객체인 경우
-        if (response.result.message && typeof response.result.message === 'object') {
-            console.log('message가 이미 객체:', response.result.message);
-            makeStatus = response.result.message.status;
-            makeMessage = response.result.message.message || '';
-            console.log('✓ 객체에서 직접 추출 - status:', makeStatus, 'message:', makeMessage);
-        }
-        // response.result.message가 JSON 문자열인 경우
-        else if (response.result.message && typeof response.result.message === 'string') {
-            try {
-                console.log('message가 문자열, 파싱 시도:', response.result.message);
-                const makeResponse = JSON.parse(response.result.message);
-                makeStatus = makeResponse.status;
-                makeMessage = makeResponse.message || '';
-                console.log('✓ 문자열 파싱 성공 - status:', makeStatus, 'message:', makeMessage);
-            } catch (e) {
-                console.error('✗ JSON 파싱 실패:', e);
-                makeMessage = response.result.message;
-            }
-        }
-        // response.result가 직접 make.com Body인 경우 (백업)
-        else if (response.result.status && typeof response.result.status === 'string') {
+        // 1) response.result가 직접 make.com Body인 경우
+        if (response.result.status) {
             makeStatus = response.result.status;
             makeMessage = response.result.message || '';
-            console.log('✓ result에서 직접 추출 - status:', makeStatus, 'message:', makeMessage);
+            console.log('✓ result에서 직접 추출 - status:', makeStatus);
         }
-    } else {
-        console.log('✗ response.result가 없음');
+        // 2) response.result.message 안에 있는 경우
+        else if (response.result.message) {
+            // 객체인 경우
+            if (typeof response.result.message === 'object') {
+                makeStatus = response.result.message.status;
+                makeMessage = response.result.message.message || '';
+                console.log('✓ message 객체에서 추출 - status:', makeStatus);
+            }
+            // 문자열인 경우
+            else if (typeof response.result.message === 'string') {
+                try {
+                    const parsed = JSON.parse(response.result.message);
+                    makeStatus = parsed.status;
+                    makeMessage = parsed.message || '';
+                    console.log('✓ message 문자열 파싱 성공 - status:', makeStatus);
+                } catch (e) {
+                    console.log('✗ message 파싱 실패, 문자열 그대로 사용');
+                    makeMessage = response.result.message;
+                }
+            }
+        }
     }
     
-    // 성공 여부 판단
+    // ✅ 안전한 성공 여부 판단
     const isSuccess = response.success && 
                      makeStatus && 
-                     typeof makeStatus === 'string' &&
-                     (makeStatus.toLowerCase() === 'success');
+                     makeStatus.toLowerCase() === 'success';
     
     console.log('최종 판단:');
     console.log('- response.success:', response.success);
-    console.log('- makeStatus:', makeStatus, '(타입:', typeof makeStatus, ')');
+    console.log('- makeStatus:', makeStatus);
     console.log('- makeMessage:', makeMessage);
     console.log('- isSuccess:', isSuccess);
-    console.log('=== 디버깅 종료 ===');
+    console.log('=== handleResponse 종료 ===');
     
     if (isSuccess) {
         logEntry.classList.add('success');
