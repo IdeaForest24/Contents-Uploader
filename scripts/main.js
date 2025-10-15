@@ -91,6 +91,17 @@ function resetTab(tabName) {
         });
     }
     
+    // ✅ 수정 2: CreBlack 플랫폼 선택 초기화 추가
+    if (tabName === 'creblack') {
+        const checkboxes = ['creblack-instagram-check', 'creblack-threads-check'];
+        checkboxes.forEach(checkboxId => {
+            const checkbox = document.getElementById(checkboxId);
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+        });
+    }
+    
     const responseArea = document.getElementById(`${tabName}-response`);
     if (responseArea) {
         responseArea.innerHTML = '응답 결과가 여기에 표시됩니다...';
@@ -128,7 +139,7 @@ function closeSettings() {
     }
 }
 
-// 설정 저장
+// ✅ 수정 1: Dudu 웹훅 저장 버그 수정
 function saveSettings() {
     console.log('설정 저장 시작');
     
@@ -138,7 +149,7 @@ function saveSettings() {
     
     if (if24Input) webhookSettings.if24 = if24Input.value;
     if (creblackInput) webhookSettings.creblack = creblackInput.value;
-    if (duduInput) duduInput.value = duduInput.value;
+    if (duduInput) webhookSettings.dudu = duduInput.value;  // ✅ 수정: 올바르게 저장
     
     try {
         localStorage.setItem('webhookSettings', JSON.stringify(webhookSettings));
@@ -409,7 +420,7 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-// ✅ 개선: 공통 웹훅 응답 처리 함수
+// 공통 웹훅 응답 처리 함수
 function parseWebhookResponse(response) {
     return response.text().then(text => {
         console.log('원본 응답 텍스트:', text);
@@ -547,7 +558,7 @@ function resetSendButton(sendBtn) {
     }
 }
 
-// ✅ 개선: 응답 처리 함수 (단순화됨)
+// 응답 처리 함수
 function handleResponse(response, responseArea, sendBtn, successMessage = '전송 완료') {
     resetSendButton(sendBtn);
     
@@ -558,28 +569,23 @@ function handleResponse(response, responseArea, sendBtn, successMessage = '전�
     const logEntry = document.createElement('div');
     logEntry.className = 'log-entry';
     
-    // ✅ 단순화된 파싱
     let makeStatus = null;
     let makeMessage = '';
     
     if (response.result) {
         console.log('response.result 존재:', response.result);
         
-        // 1) response.result가 직접 make.com Body인 경우
         if (response.result.status) {
             makeStatus = response.result.status;
             makeMessage = response.result.message || '';
             console.log('✓ result에서 직접 추출 - status:', makeStatus);
         }
-        // 2) response.result.message 안에 있는 경우
         else if (response.result.message) {
-            // 객체인 경우
             if (typeof response.result.message === 'object') {
                 makeStatus = response.result.message.status;
                 makeMessage = response.result.message.message || '';
                 console.log('✓ message 객체에서 추출 - status:', makeStatus);
             }
-            // 문자열인 경우
             else if (typeof response.result.message === 'string') {
                 try {
                     const parsed = JSON.parse(response.result.message);
@@ -594,7 +600,6 @@ function handleResponse(response, responseArea, sendBtn, successMessage = '전�
         }
     }
     
-    // ✅ 안전한 성공 여부 판단
     const isSuccess = response.success && 
                      makeStatus && 
                      makeStatus.toLowerCase() === 'success';

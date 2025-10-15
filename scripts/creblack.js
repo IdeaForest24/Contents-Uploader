@@ -1,219 +1,205 @@
-// scripts/creblack.js
+/* styles/creblack.css */
 
-// CreBlack 콘텐츠 전송
-async function sendCreBlackContent(content, files, responseArea, sendBtn, responseCallback) {
-    console.log('CreBlack 콘텐츠 전송 시작');
-    
-    try {
-        const webhookUrl = webhookSettings.creblack;
-        
-        if (!webhookUrl) {
-            throw new Error('CreBlack Webhook URL이 설정되지 않았습니다.');
-        }
-        
-        console.log('CreBlack Webhook URL:', webhookUrl);
-        
-        const optimizedContent = optimizeCreBlackContent(content);
-        
-        const formData = new FormData();
-        formData.append('content', optimizedContent);
-        formData.append('platform', 'creblack');
-        formData.append('timestamp', new Date().toISOString());
-        formData.append('source', 'AI_Content_Uploader');
-        formData.append('tab', 'creblack');
-        formData.append('contentType', 'creative');
-        
-        if (files && files.length > 0) {
-            formData.append('image_0', files[0]);
-        }
-        
-        console.log('CreBlack FormData 생성 완료, 웹훅 전송 시도...');
-        
-        const response = await fetch(webhookUrl, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Platform': 'CreBlack',
-                'X-Source': 'AI-Content-Uploader'
-            }
-        });
-        
-        console.log('CreBlack 웹훅 응답 상태:', response.status, response.statusText);
-        
-        // ✅ 개선: 공통 응답 처리 함수 사용
-        const result = await parseWebhookResponse(response);
-        console.log('파싱된 응답:', result);
-        
-        if (response.ok) {
-            const successResponse = {
-                success: true,
-                platform: 'creblack',
-                result: result,
-                timestamp: new Date().toISOString(),
-                content: optimizedContent,
-                fileCount: files ? files.length : 0,
-                contentAnalysis: analyzeCreBlackContent(optimizedContent)
-            };
-            
-            responseCallback(successResponse, 'CreBlack 전송 완료');
-        } else {
-            throw new Error(`CreBlack 웹훅 전송 실패: ${response.status} ${response.statusText}`);
-        }
-        
-    } catch (error) {
-        console.error('CreBlack 전송 오류:', error);
-        
-        const errorResponse = {
-            success: false,
-            platform: 'creblack',
-            error: error.message,
-            timestamp: new Date().toISOString()
-        };
-        
-        responseCallback(errorResponse);
-    }
+/* CreBlack 탭 특화 스타일 - 보라색 테마로 통일 */
+#creblack-tab {
+    background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+    border-radius: 8px;
+    padding: 20px;
 }
 
-// CreBlack 콘텐츠 최적화
-function optimizeCreBlackContent(content) {
-    let optimized = content;
-    
-    if (!content.includes('[창작자]') && !content.includes('[Creator]')) {
-        optimized = '[창작자 콘텐츠]\n\n' + optimized;
-    }
-    
-    optimized = normalizeCreBlackTags(optimized);
-    
-    if (optimized.length > 5000) {
-        optimized = optimized.substring(0, 4980) + '...\n\n[더 보기]';
-    }
-    
-    optimized = improveCreBlackFormatting(optimized);
-    
-    return optimized;
+/* ✅ 수정 2: CreBlack 플랫폼 선택 스타일 추가 */
+#creblack-tab .platform-selection {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.1);
+    border-left: 4px solid #667eea;
+    margin-bottom: 25px;
 }
 
-// CreBlack 태그 정규화
-function normalizeCreBlackTags(content) {
-    let normalized = content;
-    
-    const creatorTags = ['#창작', '#아트', '#디자인', '#크리에이터'];
-    const hasCreatorTag = creatorTags.some(tag => content.includes(tag));
-    
-    if (!hasCreatorTag) {
-        normalized += '\n\n#창작 #크리에이터';
-    }
-    
-    return normalized;
+#creblack-tab .checkbox-label {
+    background: #f8f9ff;
+    border: 1px solid #e0e7ff;
+    border-radius: 8px;
+    padding: 12px 16px;
+    transition: all 0.3s ease;
 }
 
-// CreBlack 포맷팅 개선
-function improveCreBlackFormatting(content) {
-    let formatted = content;
-    
-    formatted = formatted.replace(/\n{3,}/g, '\n\n');
-    formatted = formatted.replace(/[""]/g, '"');
-    formatted = formatted.replace(/['']/g, "'");
-    
-    if (!formatted.includes('🎨') && !formatted.includes('✨')) {
-        formatted = '🎨 ' + formatted;
-    }
-    
-    return formatted;
+#creblack-tab .checkbox-label:hover {
+    background: #f0f2ff;
+    border-color: #667eea;
+    transform: translateY(-1px);
 }
 
-// CreBlack 특화 기능들
-function analyzeCreBlackContent(content) {
-    const analysis = {
-        wordCount: content.split(/\s+/).length,
-        hashtagCount: (content.match(/#\w+/g) || []).length,
-        hasCreativeElements: /[🎨✨🎭🎪🎯]/.test(content),
-        isOptimized: content.includes('[창작자') || content.includes('#창작')
-    };
-    
-    console.log('CreBlack 콘텐츠 분석:', analysis);
-    return analysis;
+#creblack-tab .checkbox-label input:checked + span {
+    color: #667eea;
+    font-weight: 600;
 }
 
-// CreBlack 콘텐츠 미리보기
-function previewCreBlackContent(content) {
-    const preview = {
-        original: content,
-        optimized: optimizeCreBlackContent(content),
-        analysis: analyzeCreBlackContent(content)
-    };
-    
-    console.log('CreBlack 미리보기:', preview);
-    return preview;
+/* CreBlack 업로드 영역 */
+#creblack-upload {
+    border-color: #c7d2fe;
+    background: linear-gradient(135deg, #f8faff 0%, #f0f2ff 100%);
 }
 
-// CreBlack 특화 이벤트 리스너들
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('CreBlack 모듈 초기화');
-    
-    const creblackTextarea = document.getElementById('creblack-content');
-    if (creblackTextarea) {
-        let analysisTimeout;
-        
-        creblackTextarea.addEventListener('input', function() {
-            clearTimeout(analysisTimeout);
-            
-            analysisTimeout = setTimeout(() => {
-                const content = this.value;
-                if (content.length > 10) {
-                    const analysis = analyzeCreBlackContent(content);
-                    
-                    if (!analysis.isOptimized && content.length > 100) {
-                        console.log('CreBlack 최적화 제안: 창작자 태그를 추가하세요.');
-                    }
-                }
-            }, 500);
-        });
-        
-        creblackTextarea.addEventListener('focus', function() {
-            if (this.placeholder === '본문 내용을 입력하세요...') {
-                this.placeholder = '창작자의 이야기를 들려주세요... 🎨';
-            }
-        });
-        
-        creblackTextarea.addEventListener('blur', function() {
-            if (this.placeholder === '창작자의 이야기를 들려주세요... 🎨') {
-                this.placeholder = '본문 내용을 입력하세요...';
-            }
-        });
-    }
-    
-    document.addEventListener('keydown', function(e) {
-        if (currentTab !== 'creblack') return;
-        
-        if (e.ctrlKey && e.key === 'Enter') {
-            e.preventDefault();
-            sendContent('creblack');
-        }
-        
-        if (e.ctrlKey && e.key === 'p') {
-            e.preventDefault();
-            const content = document.getElementById('creblack-content').value;
-            if (content) {
-                const preview = previewCreBlackContent(content);
-                console.log('CreBlack 미리보기 결과:', preview);
-                if (typeof showNotification === 'function') {
-                    showNotification('콘솔에서 미리보기 결과를 확인하세요.', 'info');
-                }
-            }
-        }
-    });
-    
-    const creblackTab = document.querySelector('[onclick="switchTab(\'creblack\')"]');
-    if (creblackTab) {
-        creblackTab.addEventListener('click', function() {
-            setTimeout(() => {
-                console.log('CreBlack 모드 활성화 - 창작자 중심 모드');
-            }, 100);
-        });
-    }
-    
-    console.log('CreBlack 모듈 초기화 완료');
-});
+#creblack-upload:hover,
+#creblack-upload.dragover {
+    border-color: #667eea;
+    background: linear-gradient(135deg, #f0f2ff 0%, #e0e7ff 100%);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+}
 
-console.log('creblack.js 로드 완료');
+#creblack-upload .upload-placeholder span {
+    color: #667eea;
+}
+
+#creblack-upload .upload-placeholder p {
+    color: #9ca3af;
+}
+
+/* CreBlack 파일 아이템 스타일 */
+#creblack-file-list .file-item {
+    border-left: 3px solid #667eea;
+    background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%);
+    color: #2d3748;
+    border-color: #c7d2fe;
+}
+
+#creblack-file-list .file-name {
+    color: #2d3748;
+}
+
+#creblack-file-list .file-remove {
+    background: #dc3545;
+    border: 1px solid #dc3545;
+}
+
+#creblack-file-list .file-remove:hover {
+    background: #c82333;
+}
+
+/* CreBlack 텍스트 영역 */
+#creblack-content {
+    border: 2px solid #e0e7ff;
+    background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%);
+    color: #2d3748;
+}
+
+#creblack-content::placeholder {
+    color: #9ca3af;
+}
+
+#creblack-content:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* CreBlack 응답 영역 */
+#creblack-response {
+    background: linear-gradient(135deg, #f8faff 0%, #f0f2ff 100%);
+    border: 1px solid #e0e7ff;
+    border-left: 4px solid #667eea;
+    color: #2d3748;
+}
+
+/* CreBlack 전송 버튼 */
+#creblack-tab .send-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+}
+
+#creblack-tab .send-btn:hover {
+    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* CreBlack 초기화 버튼 */
+#creblack-tab .reset-btn {
+    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-right: 10px;
+}
+
+#creblack-tab .reset-btn:hover {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
+}
+
+/* CreBlack 로딩 상태 */
+#creblack-tab .send-btn.loading {
+    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+}
+
+/* CreBlack 성공/에러 상태 */
+#creblack-response.success {
+    background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+    border-left-color: #38a169;
+    color: #2d3748;
+}
+
+#creblack-response.error {
+    background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+    border-left-color: #e53e3e;
+    color: #2d3748;
+}
+
+/* CreBlack 특별 효과 */
+#creblack-tab .upload-area::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(102, 126, 234, 0.1) 50%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+#creblack-tab .upload-area:hover::before {
+    opacity: 1;
+}
+
+/* CreBlack 탭 활성화 효과 */
+.tab-btn[onclick="switchTab('creblack')"].active {
+    background: white;
+    color: #495057;
+    border-bottom-color: #667eea;
+}
+
+/* ✅ 수정 2: CreBlack 플랫폼 선택 상태 표시 */
+#creblack-tab .checkbox-label input:checked {
+    animation: checkPulse 0.3s ease-in-out;
+}
+
+@keyframes checkPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* CreBlack 애니메이션 */
+#creblack-tab .send-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+#creblack-tab .send-btn:hover::before {
+    left: 100%;
+}
