@@ -7,33 +7,6 @@
     padding: 20px;
 }
 
-#if24-tab .platform-selection {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.1);
-    border-left: 4px solid #667eea;
-}
-
-#if24-tab .checkbox-label {
-    background: #f8f9ff;
-    border: 1px solid #e0e7ff;
-    border-radius: 8px;
-    padding: 12px 16px;
-    transition: all 0.3s ease;
-}
-
-#if24-tab .checkbox-label:hover {
-    background: #f0f2ff;
-    border-color: #667eea;
-    transform: translateY(-1px);
-}
-
-#if24-tab .checkbox-label input:checked + span {
-    color: #667eea;
-    font-weight: 600;
-}
-
 /* IF24 업로드 영역 커스터마이징 */
 #if24-upload {
     border-color: #c7d2fe;
@@ -118,17 +91,6 @@
 
 #if24-tab .send-btn:hover::before {
     left: 100%;
-}
-
-/* 플랫폼별 선택 상태 표시 */
-#if24-tab .checkbox-label input:checked {
-    animation: checkPulse 0.3s ease-in-out;
-}
-
-@keyframes checkPulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
 }
 
 /* 로딩 상태 스타일 */
